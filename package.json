@@ -1,0 +1,80 @@
+{
+  "name": "c88",
+  "version": "0.1.0",
+  "description": "Code coverage from the future",
+  "bin": "./build/bin/c88.js",
+  "scripts": {
+    "build:bin": "tsc --project src/bin/tsconfig.json",
+    "build:lib": "tsc --project src/lib/tsconfig.json",
+    "bundle": "bundle-dependencies update",
+    "test": "npm run build:lib && nyc mocha --require ts-node/register \"./src/test/*.ts\"",
+    "posttest": "standard",
+    "prepare": "npm run build:bin",
+    "release": "standard-version"
+  },
+  "c88": {
+    "exclude": [
+      "test/*.js"
+    ]
+  },
+  "standard": {
+    "ignore": [
+      "build",
+      "src/test/fixtures"
+    ]
+  },
+  "keywords": [
+    "coverage",
+    "v8",
+    "test",
+    "istanbul",
+    "profiler",
+    "inspector"
+  ],
+  "engines": {
+    "node": ">=10.12.0"
+  },
+  "author": "Charles Samborski <demurgos@demurgos.net> (https://demurgos.net)",
+  "license": "MIT",
+  "dependencies": {
+    "@c88/v8-coverage": "^0.1.0",
+    "@types/find-up": "^2.1.1",
+    "@types/mkdirp": "^0.5.2",
+    "@types/rimraf": "^2.0.2",
+    "@types/uuid": "^3.4.3",
+    "@types/yargs": "^11.1.1",
+    "chrome-remote-interface": "^0.26.1",
+    "demurgos-foreground-child": "^1.6.0-beta.0",
+    "demurgos-spawn-wrap": "^2.0.0-beta.3",
+    "devtools-protocol": "0.0.581326",
+    "find-up": "^3.0.0",
+    "furi": "^0.1.0",
+    "istanbul-lib-coverage": "^2.0.1",
+    "istanbul-lib-report": "^2.0.1",
+    "istanbul-reports": "^2.0.0",
+    "istanbulize": "^0.1.0",
+    "mkdirp": "^0.5.1",
+    "node-script-url": "^0.1.2",
+    "rimraf": "^2.6.2",
+    "signal-exit": "^3.0.2",
+    "test-exclude": "^5.0.0",
+    "yargs": "^12.0.1",
+    "yargs-parser": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.1.4",
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^10.5.6",
+    "@types/semver": "^5.5.0",
+    "bundle-dependencies": "^1.0.2",
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0",
+    "nyc": "^13.0.1",
+    "semver": "^5.5.1",
+    "standard": "^11.0.1",
+    "standard-version": "^4.2.0",
+    "ts-node": "^7.0.0",
+    "tslint": "^5.11.0",
+    "typescript": "^3.0.1"
+  }
+}

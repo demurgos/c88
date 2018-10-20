@@ -1,0 +1,123 @@
+[
+  {
+    "url": "/data/projects/web/c8/src/test/fixtures/normal.js",
+    "source": "(function (exports, require, module, __filename, __dirname) { require('./timeout')\n\nconsole.info('i am a line of code')\n\nfunction apple (awesome) {\n  if (false || true) {\n    console.info('what')\n  }\n  if (true || false) {\n    console.log('hey')\n  }\n}\n\nfunction missed () {\n  \n}\n\napple()\napple()\napple()\n\n});",
+    "functions": [
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 0,
+            "endOffset": 308,
+            "count": 1
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 1,
+            "endOffset": 306,
+            "count": 1
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "apple",
+        "ranges": [
+          {
+            "startOffset": 121,
+            "endOffset": 251,
+            "count": 3
+          },
+          {
+            "startOffset": 211,
+            "endOffset": 219,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "missed",
+        "ranges": [
+          {
+            "startOffset": 253,
+            "endOffset": 278,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      }
+    ]
+  },
+  {
+    "url": "/data/projects/web/c8/src/test/fixtures/timeout.js",
+    "source": "(function (exports, require, module, __filename, __dirname) { const a = 'apple' ? 'banana' : 'grape'\n\nfunction cool () {\n\n}\n\nfunction awesome () {\n  console.log('hey')\n}\nawesome()\n\nsetTimeout(() => {\n  cool()\n}, 500)\n\n});",
+    "functions": [
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 0,
+            "endOffset": 221,
+            "count": 1
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 1,
+            "endOffset": 219,
+            "count": 1
+          },
+          {
+            "startOffset": 91,
+            "endOffset": 100,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "cool",
+        "ranges": [
+          {
+            "startOffset": 102,
+            "endOffset": 123,
+            "count": 1
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "awesome",
+        "ranges": [
+          {
+            "startOffset": 125,
+            "endOffset": 169,
+            "count": 1
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "setTimeout",
+        "ranges": [
+          {
+            "startOffset": 192,
+            "endOffset": 210,
+            "count": 1
+          }
+        ],
+        "isBlockCoverage": true
+      }
+    ]
+  }
+]
