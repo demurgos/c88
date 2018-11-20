@@ -1,25 +1,46 @@
 import { mergeProcessCovs, ProcessCov } from "@c88/v8-coverage";
-import asyncDone from "async-done";
-import libCoverage, { FileCoverage } from "istanbul-lib-coverage";
-import reports from "istanbul-reports";
+import libCoverage from "istanbul-lib-coverage";
 import { IstanbulFileCoverageData, istanbulize, SourceType, unwrapScriptCov, unwrapSourceText } from "istanbulize";
-import merge2 from "merge2";
-import vinylFs from "vinyl-fs";
+import { Reporter, StreamReporter, VinylReporter } from "./reporter";
+import { ReporterRegistry } from "./reporter-registry";
+import { CompoundReporter } from "./reporters/compound";
 import { SourcedProcessCov } from "./spawn-instrumented";
-import { vinylReport } from "./vinyl-istanbul";
 
-export type IstanbulReporter = "text" | "lcovonly" | "html";
-
-export interface ReportOptions {
-  processCovs: SourcedProcessCov[];
-  reporters: IstanbulReporter[];
-  coverageDir: string;
-  watermarks: any;
+export interface ReportOptions<R extends Reporter = Reporter> {
+  processCovs: ReadonlyArray<SourcedProcessCov>;
+  reporter: R;
+  outDir?: string;
 }
 
 interface ScriptData {
   sourceText: string;
   sourceType: SourceType;
+}
+
+export function createReporter(registry: ReporterRegistry, ids: ReadonlyArray<string>, options: any): Reporter {
+  const reporters: Reporter[] = [];
+  for (const id of ids) {
+    reporters.push(registry.create(id, options));
+  }
+  return reporters.length === 1 ? reporters[0] : new CompoundReporter(reporters);
+}
+
+export function reportVinyl(
+  reporter: VinylReporter,
+  processCovs: ReadonlyArray<SourcedProcessCov>,
+): NodeJS.ReadableStream {
+  const map: libCoverage.CoverageMap = toIstanbulCoverageMap(processCovs);
+  const sourceFinder: (filepath: string) => string = createSourceFinder(processCovs);
+  return reporter.reportVinyl({map, sourceFinder});
+}
+
+export function reportStream(
+  reporter: StreamReporter,
+  processCovs: ReadonlyArray<SourcedProcessCov>,
+): NodeJS.ReadableStream {
+  const map: libCoverage.CoverageMap = toIstanbulCoverageMap(processCovs);
+  const sourceFinder: (filepath: string) => string = createSourceFinder(processCovs);
+  return reporter.reportStream({map, sourceFinder});
 }
 
 export function createScriptDataMap(processCovs: ReadonlyArray<SourcedProcessCov>): Map<string, ScriptData> {
@@ -66,31 +87,4 @@ function createSourceFinder(processCovs: ReadonlyArray<SourcedProcessCov>): (fil
       return scriptData.sourceType === SourceType.Script ? unwrapSourceText(scriptData.sourceText) : scriptData.sourceText;
     }
   };
-}
-
-export function report(options: ReportOptions): NodeJS.ReadableStream {
-  const map: libCoverage.CoverageMap = toIstanbulCoverageMap(options.processCovs);
-  const reportStreams: NodeJS.ReadableStream[] = [];
-  const sourceFinder: (filepath: string) => string = createSourceFinder(options.processCovs);
-  for (const reporter of options.reporters) {
-    reportStreams.push(vinylReport(map, reports.create(reporter), sourceFinder));
-  }
-  return merge2(reportStreams);
-}
-
-export async function writeReport(options: ReportOptions): Promise<void> {
-  function task(): NodeJS.ReadableStream {
-    return report(options).pipe(vinylFs.dest(options.coverageDir));
-  }
-
-  return new Promise<void>((resolve, reject) => {
-    asyncDone(task, (err: Error | null, res: void): void => {
-      // TODO: Send PR to normalize lack of error to `null`
-      if (err !== null && err !== undefined) {
-        reject(err);
-      } else {
-        resolve(res);
-      }
-    });
-  });
 }

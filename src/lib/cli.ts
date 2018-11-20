@@ -2,9 +2,13 @@ import assert from "assert";
 import findUp from "find-up";
 import fs from "fs";
 import Exclude from "test-exclude";
+import vinylFs from "vinyl-fs";
 import yargs from "yargs";
+import { asyncDonePromise } from "./async-done-promise";
 import { CoverageFilter, fromGlob } from "./filter";
-import { IstanbulReporter, writeReport } from "./report";
+import { createReporter, reportStream, reportVinyl } from "./report";
+import { Reporter, StreamReporter, VinylReporter } from "./reporter";
+import { DEFAULT_REGISTRY } from "./reporter-registry";
 import { SourcedProcessCov, spawnInstrumented } from "./spawn-instrumented";
 import { VERSION } from "./version";
 
@@ -16,7 +20,7 @@ interface Watermarks {
 }
 
 export interface FileConfig {
-  reporters?: IstanbulReporter[];
+  reporters?: string[];
   exclude?: string[];
   include?: string[];
   coverageDir?: string;
@@ -24,7 +28,7 @@ export interface FileConfig {
 }
 
 export interface CliConfig {
-  reporters?: IstanbulReporter[];
+  reporters?: string[];
   exclude?: string[];
   include?: string[];
   coverageDir?: string;
@@ -32,7 +36,7 @@ export interface CliConfig {
 }
 
 export interface ResolvedConfig {
-  reporters: IstanbulReporter[];
+  reporters: string[];
   exclude: string[];
   include: string[];
   coverageDir: string;
@@ -99,7 +103,7 @@ ARG_PARSER
  * @param cwd
  * @param proc
  */
-export async function execCli(args: string[], cwd: string, proc: any): Promise<number> {
+export async function execCli(args: string[], cwd: string, proc: NodeJS.Process): Promise<number> {
   const action: CliAction = await getAction(args, cwd);
 
   switch (action.action) {
@@ -124,18 +128,35 @@ function resolveConfig(fileConfig: FileConfig, cliConfig: CliConfig): ResolvedCo
   };
 }
 
-async function execRunAction(action: RunAction, cwd: string, proc: any): Promise<number> {
-  const file: string = action.config.command[0];
-  const args: string[] = action.config.command.slice(1);
+async function execRunAction({config}: RunAction, cwd: string, proc: NodeJS.Process): Promise<number> {
+  const file: string = config.command[0];
+  const args: string[] = config.command.slice(1);
   const filter: CoverageFilter = fromGlob([]); // TODO: Pass include/exclude.
   const processCovs: SourcedProcessCov[] = await spawnInstrumented(file, args, filter);
-  await writeReport({
-    processCovs,
-    coverageDir: action.config.coverageDir,
-    reporters: action.config.reporters,
-    watermarks: action.config.waterMarks,
-  });
-  return 0;
+  const reportOptions: any = {
+    waterMarks: config.waterMarks,
+  };
+
+  const reporter: Reporter = createReporter(DEFAULT_REGISTRY, config.reporters, reportOptions);
+  const tasks: Array<Promise<void>> = [];
+  if (reporter.reportStream !== undefined) {
+    const stream: NodeJS.ReadableStream = reportStream(reporter as StreamReporter, processCovs)
+      .pipe(proc.stdout);
+    tasks.push(asyncDonePromise(() => stream));
+  }
+  if (reporter.reportStream !== undefined) {
+    const stream: NodeJS.ReadableStream = reportVinyl(reporter as VinylReporter, processCovs)
+      .pipe(vinylFs.dest(config.coverageDir));
+    tasks.push(asyncDonePromise(() => stream));
+  }
+
+  try {
+    await Promise.all(tasks);
+    return 0;
+  } catch (err) {
+    proc.stderr.write(Buffer.from(err.toString() + "\n"));
+    return 1;
+  }
 }
 
 export async function getAction(args: string[], cwd: string): Promise<CliAction> {
