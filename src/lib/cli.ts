@@ -4,7 +4,7 @@ import fs from "fs";
 import Exclude from "test-exclude";
 import yargs from "yargs";
 import { CoverageFilter, fromGlob } from "./filter";
-import { IstanbulReporter, writeReports } from "./report";
+import { IstanbulReporter, writeReport } from "./report";
 import { SourcedProcessCov, spawnInstrumented } from "./spawn-instrumented";
 import { VERSION } from "./version";
 
@@ -129,7 +129,7 @@ async function execRunAction(action: RunAction, cwd: string, proc: any): Promise
   const args: string[] = action.config.command.slice(1);
   const filter: CoverageFilter = fromGlob([]); // TODO: Pass include/exclude.
   const processCovs: SourcedProcessCov[] = await spawnInstrumented(file, args, filter);
-  await writeReports({
+  await writeReport({
     processCovs,
     coverageDir: action.config.coverageDir,
     reporters: action.config.reporters,

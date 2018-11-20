@@ -2,7 +2,7 @@ import chai from "chai";
 import childProcess from "child_process";
 import sysPath from "path";
 
-const c8Path = require.resolve("../../build/bin/c8");
+const c8Path = require.resolve("../../build/bin/c88");
 
 chai.should();
 
