@@ -70,7 +70,7 @@ const DEFAULT_WATERMARKS: Watermarks = Object.freeze({
 const ARG_PARSER: yargs.Argv = yargs() as any;
 
 ARG_PARSER
-  .scriptName("c8")
+  .scriptName("c88")
   .version(VERSION)
   .usage("$0 [opts] [script] [opts]")
   .locale("en")
@@ -98,7 +98,7 @@ ARG_PARSER
   .epilog("visit https://git.io/vHysA for list of available reporters");
 
 /**
- * Executes the c8 CLI
+ * Executes the c88 CLI
  * @param args
  * @param cwd
  * @param proc
@@ -208,7 +208,7 @@ export function parseArgs(args: string[]): ParseArgsResult {
 }
 
 async function readConfigFile(cwd: string): Promise<FileConfig> {
-  const configPath: string | null = findUp.sync([".c8rc", ".c8rc.json"]);
+  const configPath: string | null = findUp.sync([".c88rc", ".c88rc.json"]);
   if (configPath === null) {
     return Object.create(null);
   }
