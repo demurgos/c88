@@ -82,6 +82,7 @@ ARG_PARSER
   .option("exclude", {
     alias: "x",
     default: Exclude.defaultExclude,
+    // tslint:disable-next-line:max-line-length
     describe: "a list of specific files and directories that should be excluded from coverage, glob patterns are supported.",
   })
   .option("include", {
@@ -97,11 +98,14 @@ ARG_PARSER
   .demandCommand(1)
   .epilog("visit https://git.io/vHysA for list of available reporters");
 
+// tslint:disable:whitespace
+
 /**
  * Executes the c88 CLI
- * @param args
- * @param cwd
- * @param proc
+ *
+ * @param args CLI arguments
+ * @param cwd Current working directory
+ * @param proc Current process
  */
 export async function execCli(args: string[], cwd: string, proc: NodeJS.Process): Promise<number> {
   const action: CliAction = await getAction(args, cwd);
@@ -144,7 +148,7 @@ async function execRunAction({config}: RunAction, cwd: string, proc: NodeJS.Proc
       .pipe(proc.stdout);
     tasks.push(asyncDonePromise(() => stream));
   }
-  if (reporter.reportStream !== undefined) {
+  if (reporter.reportVinyl !== undefined) {
     const stream: NodeJS.ReadableStream = reportVinyl(reporter as VinylReporter, processCovs)
       .pipe(vinylFs.dest(config.coverageDir));
     tasks.push(asyncDonePromise(() => stream));

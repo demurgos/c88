@@ -35,7 +35,11 @@ describe("report", () => {
     it("text", async function test(this: Mocha.Context) {
       this.timeout(10000);
 
-      const processCovs: SourcedProcessCov[] = await spawnInstrumented(process.execPath, [FIXTURE], inFixturesDirectory);
+      const processCovs: SourcedProcessCov[] = await spawnInstrumented(
+        process.execPath,
+        [FIXTURE],
+        inFixturesDirectory,
+      );
       const reporter: StreamReporter = createTextReporter();
       const stream: NodeJS.ReadableStream = reportStream(reporter, processCovs);
 

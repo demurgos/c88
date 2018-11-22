@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { execCli } from "../lib/cli";
+import { execCli } from "../cli";
 
 async function main(): Promise<never> {
   const args: string[] = process.argv.slice(2);

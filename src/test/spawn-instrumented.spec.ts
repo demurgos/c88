@@ -30,7 +30,11 @@ describe("spawnInstrumented", () => {
     const FIXTURE = require.resolve("./fixtures/normal.js");
 
     it("runs it successfully and collect V8 coverage", async () => {
-      const processCovs: SourcedProcessCov[] = await spawnInstrumented(process.execPath, [FIXTURE], inFixturesDirectory);
+      const processCovs: SourcedProcessCov[] = await spawnInstrumented(
+        process.execPath,
+        [FIXTURE],
+        inFixturesDirectory
+      );
       chai.assert.isArray(processCovs);
       chai.assert.lengthOf(processCovs, 1);
       chai.assert.isArray(processCovs[0].result);

@@ -84,7 +84,9 @@ function createSourceFinder(processCovs: ReadonlyArray<SourcedProcessCov>): (fil
     if (scriptData === undefined) {
       throw new Error(`FileNotFound: ${filepath}`);
     } else {
-      return scriptData.sourceType === SourceType.Script ? unwrapSourceText(scriptData.sourceText) : scriptData.sourceText;
+      return scriptData.sourceType === SourceType.Script
+        ? unwrapSourceText(scriptData.sourceText)
+        : scriptData.sourceText;
     }
   };
 }

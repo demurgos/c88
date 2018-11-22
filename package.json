@@ -2,20 +2,13 @@
   "name": "c88",
   "version": "0.1.0",
   "description": "Code coverage from the future",
-  "bin": "./build/bin/c88.js",
+  "bin": "./bin/c88.js",
   "scripts": {
-    "build:bin": "tsc --project src/bin/tsconfig.json",
-    "build:lib": "tsc --project src/lib/tsconfig.json",
-    "bundle": "bundle-dependencies update",
-    "test": "npm run build:lib && nyc mocha --require ts-node/register \"./src/test/*.ts\"",
-    "posttest": "standard",
-    "prepare": "npm run build:bin",
-    "release": "standard-version"
-  },
-  "c88": {
-    "exclude": [
-      "test/*.js"
-    ]
+    "prepare": "gulp all:tsconfig.json && gulp :tslint.json && gulp lib:dist",
+    "pretest": "gulp :lint && gulp lib:build",
+    "test": "gulp test",
+    "prepublishOnly": "npm test",
+    "lint": "gulp :lint:fix"
   },
   "nyc": {
     "include": [
@@ -32,12 +25,6 @@
       ".mjs"
     ]
   },
-  "standard": {
-    "ignore": [
-      "build",
-      "src/test/fixtures"
-    ]
-  },
   "keywords": [
     "coverage",
     "v8",
@@ -51,6 +38,14 @@
   },
   "author": "Charles Samborski <demurgos@demurgos.net> (https://demurgos.net)",
   "license": "MIT",
+  "files": [
+    "CHANGELOG.md",
+    "LICENSE.md",
+    "README.md",
+    "build",
+    "package.json",
+    "src"
+  ],
   "dependencies": {
     "@c88/v8-coverage": "^0.1.0",
     "@types/find-up": "^2.1.1",
@@ -90,18 +85,22 @@
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
+    "@types/minimist": "^1.2.0",
     "@types/mocha": "^5.2.5",
     "@types/node": "^10.12.10",
     "@types/semver": "^5.5.0",
     "bundle-dependencies": "^1.0.2",
     "chai": "^4.2.0",
+    "gulp": "^4.0.0",
+    "gulp-cli": "^2.0.1",
+    "minimist": "^1.2.0",
     "mocha": "^5.2.0",
     "nyc": "^13.1.0",
     "semver": "^5.6.0",
-    "standard": "^12.0.1",
     "standard-version": "^4.4.0",
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
+    "turbo-gulp": "^0.17.1",
     "typescript": "^3.1.6"
   }
 }

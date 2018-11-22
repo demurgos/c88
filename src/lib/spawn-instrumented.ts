@@ -85,7 +85,7 @@ export async function getDebuggerPort(proc: ChildProcessProxy): Promise<number> 
 async function getCoverage(port: number, filter?: CoverageFilter): Promise<SourcedProcessCov> {
   return new Promise<SourcedProcessCov>(async (resolve, reject) => {
     const timeoutId: NodeJS.Timer = setTimeout(onTimeout, GET_COVERAGE_TIMEOUT);
-    let client: Protocol.ProtocolApi;
+    let client: any;
     let mainExecutionContextId: Protocol.Runtime.ExecutionContextId | undefined;
     const scriptsToCollect: Map<Protocol.Runtime.ScriptId, boolean> = new Map();
     let state: string = "WaitingForMainContext"; // TODO: enum
