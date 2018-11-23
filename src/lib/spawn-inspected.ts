@@ -1,7 +1,7 @@
 import { ProcessCov, ScriptCov } from "@c88/v8-coverage";
 import assert from "assert";
 import cri from "chrome-remote-interface";
-import { ChildProcessProxy, observeSpawn, SpawnEvent } from "demurgos-spawn-wrap";
+import { ChildProcessProxy, observeSpawn, ObserveSpawnOptions, SpawnEvent } from "demurgos-spawn-wrap";
 import Protocol from "devtools-protocol";
 import events from "events";
 import { SourceType } from "istanbulize";
@@ -22,20 +22,24 @@ export interface SourcedProcessCov extends ProcessCov {
   result: SourcedScriptCov[];
 }
 
-export async function spawnInstrumented(
+export interface SpawnInspectedOptions extends ObserveSpawnOptions {
+  filter?: CoverageFilter,
+}
+
+export async function spawnInspected(
   file: string,
   args: ReadonlyArray<string>,
-  filter?: CoverageFilter,
+  options: SpawnInspectedOptions,
 ): Promise<SourcedProcessCov[]> {
   const processCovs: SourcedProcessCov[] = [];
 
   return new Promise<SourcedProcessCov[]>((resolve, reject) => {
-    observeSpawn(file, args)
+    observeSpawn(file, args, options)
       .subscribe(
         async (ev: SpawnEvent) => {
           const proxy = ev.proxySpawn(["--inspect=0", ...ev.args]);
           const debuggerPort: number = await getDebuggerPort(proxy);
-          const processCov: SourcedProcessCov = await getCoverage(debuggerPort, filter);
+          const processCov: SourcedProcessCov = await getCoverage(debuggerPort, options.filter);
           processCovs.push(processCov);
         },
         (error: Error) => reject(error),

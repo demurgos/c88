@@ -5,7 +5,7 @@ import { ModuleInfo } from "../lib/filter";
 import { reportStream } from "../lib/report";
 import { StreamReporter } from "../lib/reporter";
 import { createTextReporter } from "../lib/reporters/text";
-import { SourcedProcessCov, spawnInstrumented } from "../lib/spawn-instrumented";
+import { SourcedProcessCov, spawnInspected } from "../lib/spawn-inspected";
 
 function inFixturesDirectory(info: ModuleInfo): boolean {
   const scriptUrl: ScriptUrl = parseNodeScriptUrl(info.url);
@@ -35,10 +35,10 @@ describe("report", () => {
     it("text", async function test(this: Mocha.Context) {
       this.timeout(10000);
 
-      const processCovs: SourcedProcessCov[] = await spawnInstrumented(
+      const processCovs: SourcedProcessCov[] = await spawnInspected(
         process.execPath,
         [FIXTURE],
-        inFixturesDirectory,
+        {filter: inFixturesDirectory},
       );
       const reporter: StreamReporter = createTextReporter();
       const stream: NodeJS.ReadableStream = reportStream(reporter, processCovs);

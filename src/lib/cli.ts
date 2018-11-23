@@ -9,7 +9,7 @@ import { CoverageFilter, fromGlob } from "./filter";
 import { createReporter, reportStream, reportVinyl } from "./report";
 import { Reporter, StreamReporter, VinylReporter } from "./reporter";
 import { DEFAULT_REGISTRY } from "./reporter-registry";
-import { SourcedProcessCov, spawnInstrumented } from "./spawn-instrumented";
+import { SourcedProcessCov, spawnInspected } from "./spawn-inspected";
 import { VERSION } from "./version";
 
 interface Watermarks {
@@ -136,7 +136,7 @@ async function execRunAction({config}: RunAction, cwd: string, proc: NodeJS.Proc
   const file: string = config.command[0];
   const args: string[] = config.command.slice(1);
   const filter: CoverageFilter = fromGlob([]); // TODO: Pass include/exclude.
-  const processCovs: SourcedProcessCov[] = await spawnInstrumented(file, args, filter);
+  const processCovs: SourcedProcessCov[] = await spawnInspected(file, args, {filter});
   const reportOptions: any = {
     waterMarks: config.waterMarks,
   };

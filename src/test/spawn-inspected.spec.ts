@@ -2,7 +2,7 @@ import chai from "chai";
 import { parseSys as parseNodeScriptUrl, ScriptUrl } from "node-script-url";
 import path from "path";
 import { ModuleInfo } from "../lib/filter";
-import { SourcedProcessCov, spawnInstrumented } from "../lib/spawn-instrumented";
+import { SourcedProcessCov, spawnInspected } from "../lib/spawn-inspected";
 
 function inFixturesDirectory(info: ModuleInfo): boolean {
   const scriptUrl: ScriptUrl = parseNodeScriptUrl(info.url);
@@ -25,15 +25,15 @@ function isDescendantOf(descendantPath: string, ancestorPath: string): boolean {
   return false;
 }
 
-describe("spawnInstrumented", () => {
+describe("spawnInspected", () => {
   describe("node normal.js", () => {
     const FIXTURE = require.resolve("./fixtures/normal.js");
 
     it("runs it successfully and collect V8 coverage", async () => {
-      const processCovs: SourcedProcessCov[] = await spawnInstrumented(
+      const processCovs: SourcedProcessCov[] = await spawnInspected(
         process.execPath,
         [FIXTURE],
-        inFixturesDirectory
+        {filter: inFixturesDirectory},
       );
       chai.assert.isArray(processCovs);
       chai.assert.lengthOf(processCovs, 1);

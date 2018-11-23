@@ -4,7 +4,7 @@ import { IstanbulFileCoverageData, istanbulize, SourceType, unwrapScriptCov, unw
 import { Reporter, StreamReporter, VinylReporter } from "./reporter";
 import { ReporterRegistry } from "./reporter-registry";
 import { CompoundReporter } from "./reporters/compound";
-import { SourcedProcessCov } from "./spawn-instrumented";
+import { SourcedProcessCov } from "./spawn-inspected";
 
 export interface ReportOptions<R extends Reporter = Reporter> {
   processCovs: ReadonlyArray<SourcedProcessCov>;
