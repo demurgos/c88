@@ -38,14 +38,6 @@
   },
   "author": "Charles Samborski <demurgos@demurgos.net> (https://demurgos.net)",
   "license": "MIT",
-  "files": [
-    "CHANGELOG.md",
-    "LICENSE.md",
-    "README.md",
-    "build",
-    "package.json",
-    "src"
-  ],
   "dependencies": {
     "@c88/v8-coverage": "^0.1.0",
     "@types/find-up": "^2.1.1",
