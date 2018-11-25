@@ -7,7 +7,9 @@ const c8Path = require.resolve("../lib/bin/c88");
 chai.should();
 
 describe("c88", () => {
-  it("reports coverage for script that exits normally", () => {
+  it("reports coverage for script that exits normally", function(this: Mocha.Context) {
+    this.timeout(10000);
+
     const {stdout} = childProcess.spawnSync(process.execPath, [
       c8Path,
       process.execPath,

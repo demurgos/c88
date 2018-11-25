@@ -27,7 +27,7 @@ function isDescendantOf(descendantPath: string, ancestorPath: string): boolean {
 
 describe("spawnInspected", () => {
   describe("node normal.js", () => {
-    const FIXTURE = require.resolve("./fixtures/normal.js");
+    const FIXTURE: string = require.resolve("./fixtures/normal.js");
 
     it("runs it successfully and collect V8 coverage", async () => {
       const processCovs: SourcedProcessCov[] = await spawnInspected(
@@ -39,6 +39,22 @@ describe("spawnInspected", () => {
       chai.assert.lengthOf(processCovs, 1);
       chai.assert.isArray(processCovs[0].result);
       chai.assert.lengthOf(processCovs[0].result, 2);
+    });
+  });
+
+  describe("node --experimental-modules hello-world.mjs", () => {
+    const FIXTURE: string = require.resolve("./fixtures/hello-world.mjs");
+
+    it("runs it successfully and collect V8 coverage", async () => {
+      const processCovs: SourcedProcessCov[] = await spawnInspected(
+        process.execPath,
+        ["--experimental-modules", FIXTURE],
+        {filter: inFixturesDirectory},
+      );
+      chai.assert.isArray(processCovs);
+      chai.assert.lengthOf(processCovs, 1);
+      chai.assert.isArray(processCovs[0].result);
+      chai.assert.lengthOf(processCovs[0].result, 1);
     });
   });
 });

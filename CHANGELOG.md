@@ -1,3 +1,7 @@
+# Next
+
+- **[Fix]** Add support for exec args (such as `--experimental-modules`).
+
 # 0.1.2 (2018-11-23)
 
 - **[Fix]** Fix published files

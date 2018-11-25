@@ -2196,10 +2196,10 @@ demurgos-foreground-child@^1.6.0-beta.0:
     cross-spawn "^6"
     signal-exit "^3.0.0"
 
-demurgos-spawn-wrap@^2.0.0-beta.5:
-  version "2.0.0-beta.5"
-  resolved "https://registry.yarnpkg.com/demurgos-spawn-wrap/-/demurgos-spawn-wrap-2.0.0-beta.5.tgz#45fdcd826dfc3a3e3a278d8106cc8a08e50560d9"
-  integrity sha512-5x2mMedd/pTHccHo+7kWmX4bYsv1yjVVzzS90GjZ9REwXqacDfE8xhLyLDq2A0w7dgqXmr2IX6YqX1ozaHyZsQ==
+demurgos-spawn-wrap@^2.0.0-beta.6:
+  version "2.0.0-beta.6"
+  resolved "https://registry.yarnpkg.com/demurgos-spawn-wrap/-/demurgos-spawn-wrap-2.0.0-beta.6.tgz#a42d907b1674d9fa5a058f4ad48f5250becf952b"
+  integrity sha512-P/8oQckg0GUJ6zbvtGWSCmkXSlkxHKThZxsvotu+uyS7zeLO18o7dEbnXBlMV4aaHsg0iLSh+MQ96KWR2Gi8vA==
   dependencies:
     "@types/cross-spawn" "^6.0.0"
     "@types/is-windows" "^0.2.0"
