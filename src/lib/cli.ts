@@ -144,7 +144,13 @@ async function execRunAction({config}: RunAction, cwd: string, proc: NodeJS.Proc
     }
   }
 
-  const processCovs: SourcedProcessCov[] = await spawnInspected(file, args, {filter, onRootProcess});
+  let processCovs: SourcedProcessCov[];
+  try {
+    processCovs = await spawnInspected(file, args, {filter, onRootProcess});
+  } catch (err) {
+    proc.stderr.write(Buffer.from(`${err.toString()}\n`));
+    return 1;
+  }
   const exitCode: number = await subProcessExit.promise;
   const reportOptions: any = {
     waterMarks: config.waterMarks,

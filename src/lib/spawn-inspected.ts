@@ -39,14 +39,18 @@ export async function spawnInspected(
     observeSpawn(file, args, options)
       .subscribe(
         async (ev: SpawnEvent) => {
-          if (ev.rootProcess !== undefined && options.onRootProcess !== undefined) {
-            options.onRootProcess(ev.rootProcess);
+          try {
+            if (ev.rootProcess !== undefined && options.onRootProcess !== undefined) {
+              options.onRootProcess(ev.rootProcess);
+            }
+            const args: ReadonlyArray<string> = ["--inspect=0", ...ev.args];
+            const proxy: ChildProcessProxy = ev.proxySpawn(args);
+            const debuggerPort: number = await getDebuggerPort(proxy);
+            const processCov: SourcedProcessCov = await getCoverage(debuggerPort, options.filter);
+            processCovs.push(processCov);
+          } catch (err) {
+            reject(err);
           }
-          const args: ReadonlyArray<string> = ["--inspect=0", ...ev.args];
-          const proxy: ChildProcessProxy = ev.proxySpawn(args);
-          const debuggerPort: number = await getDebuggerPort(proxy);
-          const processCov: SourcedProcessCov = await getCoverage(debuggerPort, options.filter);
-          processCovs.push(processCov);
         },
         reject,
         () => resolve(processCovs),
