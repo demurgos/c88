@@ -178,12 +178,15 @@ async function execRunAction({config}: RunAction, cwd: string, proc: NodeJS.Proc
 }
 
 export async function getAction(args: string[], cwd: string): Promise<CliAction> {
-  const action: ParseArgsResult = parseArgs(args);
-  if (action.action !== "run") {
-    return action;
+  const parsed: ParseArgsResult = parseArgs(args);
+  if (parsed.action !== "run") {
+    return parsed;
   }
   const fileConfig: FileConfig = await readConfigFile(cwd);
-  return {action: "run", config: resolveConfig(fileConfig, action.config)};
+  return {
+    action: "run",
+    config: resolveConfig(fileConfig, parsed.config),
+  };
 }
 
 export function parseArgs(args: string[]): ParseArgsResult {

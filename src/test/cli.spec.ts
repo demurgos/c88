@@ -1,5 +1,5 @@
 import chai from "chai";
-import { MessageAction, parseArgs, RunAction } from "../lib/cli";
+import { MessageAction, parseArgs, ParseArgsResult, RunAction } from "../lib/cli";
 import { VERSION } from "../lib/version";
 
 describe("cli", () => {
@@ -12,23 +12,61 @@ describe("cli", () => {
     });
 
     it("[\"--version\"]", () => {
-      const actual = parseArgs(["--version"]) as MessageAction;
+      const actual: MessageAction = parseArgs(["--version"]) as MessageAction;
       chai.assert.propertyVal(actual, "action", "message");
       chai.assert.isUndefined(actual.error);
       chai.assert.propertyVal(actual, "message", VERSION);
     });
 
     it("[\"--help\"]", () => {
-      const actual = parseArgs(["--help"]) as MessageAction;
+      const actual: MessageAction = parseArgs(["--help"]) as MessageAction;
       chai.assert.propertyVal(actual, "action", "message");
       chai.assert.isUndefined(actual.error);
       chai.assert.notStrictEqual(actual.message, "");
     });
 
     it("[\"node\", \"foo.js\"]", () => {
-      const actual = parseArgs(["node", "foo.js"]) as RunAction;
-      chai.assert.propertyVal(actual, "action", "run");
-      chai.assert.isDefined(actual.config);
+      const actual: ParseArgsResult = parseArgs(["node", "foo.js"]) as ParseArgsResult;
+      const expected: ParseArgsResult = {
+        action: "run",
+        config: {
+          reporters: ["text"],
+          exclude: [
+            "coverage/**",
+            "packages/*/test/**",
+            "test/**",
+            "test{,-*}.js",
+            "**/*{.,-}test.js",
+            "**/__tests__/**",
+            "**/node_modules/**",
+          ],
+          include: [],
+          command: ["node", "foo.js"],
+        },
+      };
+      chai.assert.deepEqual(actual, expected);
+    });
+
+    it("[\"--\", \"node\", \"--experimental-modules\", \"foo.mjs\"]", () => {
+      const actual: ParseArgsResult = parseArgs(["--", "node", "--experimental-modules", "foo.mjs"]);
+      const expected: ParseArgsResult = {
+        action: "run",
+        config: {
+          reporters: ["text"],
+          exclude: [
+            "coverage/**",
+            "packages/*/test/**",
+            "test/**",
+            "test{,-*}.js",
+            "**/*{.,-}test.js",
+            "**/__tests__/**",
+            "**/node_modules/**",
+          ],
+          include: [],
+          command: ["node", "--experimental-modules", "foo.mjs"],
+        },
+      };
+      chai.assert.deepEqual(actual, expected);
     });
   });
 });
