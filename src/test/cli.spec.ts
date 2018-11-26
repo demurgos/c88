@@ -31,16 +31,16 @@ describe("cli", () => {
         action: "run",
         config: {
           reporters: ["text"],
-          exclude: [
-            "coverage/**",
-            "packages/*/test/**",
-            "test/**",
-            "test{,-*}.js",
-            "**/*{.,-}test.js",
-            "**/__tests__/**",
-            "**/node_modules/**",
+          globs: [
+            "!coverage/**",
+            "!packages/*/test/**",
+            "!test/**",
+            "!test{,-*}.js",
+            "!**/*{.,-}test.js",
+            "!**/__tests__/**",
+            "!**/node_modules/**",
+            "!node_modules/**",
           ],
-          include: [],
           command: ["node", "foo.js"],
         },
       };
@@ -53,16 +53,15 @@ describe("cli", () => {
         action: "run",
         config: {
           reporters: ["text"],
-          exclude: [
-            "coverage/**",
-            "packages/*/test/**",
-            "test/**",
-            "test{,-*}.js",
-            "**/*{.,-}test.js",
-            "**/__tests__/**",
-            "**/node_modules/**",
+          globs: [
+            "!coverage/**",
+            "!packages/*/test/**",
+            "!test/**",
+            "!test{,-*}.js",
+            "!**/*{.,-}test.js",
+            "!**/__tests__/**",
+            "!**/node_modules/**",
           ],
-          include: [],
           command: ["node", "--experimental-modules", "foo.mjs"],
         },
       };

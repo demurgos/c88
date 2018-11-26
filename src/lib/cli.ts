@@ -1,7 +1,9 @@
 import assert from "assert";
 import cp from "child_process";
+import { CloseFn as FgCloseFn, proxy as fgChildProxy } from "demurgos-foreground-child";
 import findUp from "find-up";
 import fs from "fs";
+import { fromSysPath } from "furi";
 import Exclude from "test-exclude";
 import vinylFs from "vinyl-fs";
 import yargs from "yargs";
@@ -12,7 +14,8 @@ import { Reporter, StreamReporter, VinylReporter } from "./reporter";
 import { DEFAULT_REGISTRY } from "./reporter-registry";
 import { SourcedProcessCov, spawnInspected } from "./spawn-inspected";
 import { VERSION } from "./version";
-import { CloseFn as FgCloseFn, proxy as fgChildProxy } from "demurgos-foreground-child";
+
+const DEFAULT_GLOBS: ReadonlyArray<string> = Exclude.defaultExclude.map((pattern: string) => `!${pattern}`);
 
 interface Watermarks {
   lines: [number, number];
@@ -22,28 +25,25 @@ interface Watermarks {
 }
 
 export interface FileConfig {
-  reporters?: string[];
-  exclude?: string[];
-  include?: string[];
+  reporters?: ReadonlyArray<string>;
+  globs?: ReadonlyArray<string>;
   coverageDir?: string;
   waterMarks?: Watermarks;
 }
 
 export interface CliConfig {
-  reporters?: string[];
-  exclude?: string[];
-  include?: string[];
+  reporters?: ReadonlyArray<string>;
+  globs?: ReadonlyArray<string>;
   coverageDir?: string;
-  command: string[];
+  command: ReadonlyArray<string>;
 }
 
 export interface ResolvedConfig {
-  reporters: string[];
-  exclude: string[];
-  include: string[];
+  reporters: ReadonlyArray<string>;
+  globs: ReadonlyArray<string>;
   coverageDir: string;
   waterMarks: Watermarks;
-  command: string[];
+  command: ReadonlyArray<string>;
 }
 
 export interface MessageAction {
@@ -81,16 +81,11 @@ ARG_PARSER
     describe: "coverage reporter(s) to use",
     default: "text",
   })
-  .option("exclude", {
-    alias: "x",
-    default: Exclude.defaultExclude,
+  .option("match", {
+    alias: "m",
+    default: DEFAULT_GLOBS,
     // tslint:disable-next-line:max-line-length
-    describe: "a list of specific files and directories that should be excluded from coverage, glob patterns are supported.",
-  })
-  .option("include", {
-    alias: "n",
-    default: [],
-    describe: "a list of specific files that should be covered, glob patterns are supported",
+    describe: "a list of specific files and directories that should be matched, glob patterns are supported.",
   })
   .option("coverage-directory", {
     default: "coverage",
@@ -127,8 +122,7 @@ function resolveConfig(fileConfig: FileConfig, cliConfig: CliConfig): ResolvedCo
   return {
     command: cliConfig.command,
     reporters: cliConfig.reporters !== undefined ? cliConfig.reporters : ["text"],
-    exclude: cliConfig.exclude !== undefined ? cliConfig.exclude : ["test/*.js"],
-    include: cliConfig.include !== undefined ? cliConfig.include : [],
+    globs: cliConfig.globs !== undefined ? cliConfig.globs : DEFAULT_GLOBS,
     waterMarks: fileConfig.waterMarks !== undefined ? fileConfig.waterMarks : DEFAULT_WATERMARKS,
     coverageDir: cliConfig.coverageDir !== undefined ? cliConfig.coverageDir : "coverage",
   };
@@ -137,7 +131,7 @@ function resolveConfig(fileConfig: FileConfig, cliConfig: CliConfig): ResolvedCo
 async function execRunAction({config}: RunAction, cwd: string, proc: NodeJS.Process): Promise<number> {
   const file: string = config.command[0];
   const args: string[] = config.command.slice(1);
-  const filter: CoverageFilter = fromGlob([]); // TODO: Pass include/exclude.
+  const filter: CoverageFilter = fromGlob({patterns: config.globs, base: fromSysPath(cwd)});
 
   const subProcessExit: DeferredPromise<number> = deferPromise();
 
@@ -219,8 +213,7 @@ export function parseArgs(args: string[]): ParseArgsResult {
       config: {
         command: parsed._,
         reporters: [parsed.reporter],
-        exclude: parsed.exclude,
-        include: parsed.include,
+        globs: parsed.match,
       },
     };
   } else {
@@ -256,6 +249,6 @@ function pipeData(src: NodeJS.ReadableStream, dest: NodeJS.WritableStream): Prom
   return new Promise<void>((resolve, reject) => {
     src.on("data", chunk => dest.write(chunk));
     src.on("error", reject);
-    src.on("end", () => resolve());
+    src.on("end", resolve);
   });
 }

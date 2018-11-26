@@ -1,7 +1,8 @@
+import { fromSysPath, toPosixPath } from "furi";
+import minimatch from "minimatch";
+import { parseSys as parseNodeScriptUrl, ScriptUrl } from "node-script-url";
 import sysPath from "path";
 import url from "url";
-import { parseSys as parseNodeScriptUrl, ScriptUrl } from "node-script-url";
-import { fromSysPath } from "furi";
 
 export interface ModuleInfo {
   url: string;
@@ -10,11 +11,70 @@ export interface ModuleInfo {
 
 export type CoverageFilter = (info: ModuleInfo) => boolean;
 
-export function fromGlob(patterns: string[]): CoverageFilter {
-  // TODO: Actually create a filter based on the glob
-  // tslint:disable-next-line:no-console
-  console.warn("NotImplemented: fromGlob (fallback to `() => inCwd`)");
-  return inCwd;
+export interface FromGlobOptions {
+  patterns: ReadonlyArray<string>;
+
+  /**
+   * Base file URL for relative patterns.
+   */
+  base?: url.URL;
+}
+
+interface FuriMatch {
+  type: "negative" | "positive";
+  regexp: RegExp;
+}
+
+export function fromGlob(options: FromGlobOptions): CoverageFilter {
+  let basePath: string | undefined;
+  if (options.base !== undefined) {
+    basePath = toPosixPath(options.base.href);
+  }
+
+  const matches: FuriMatch[] = [];
+  const patterns: ReadonlyArray<string> = [...options.patterns, "**/*"];
+  for (const pattern of patterns) {
+    let absPattern: string;
+    let type: "negative" | "positive";
+    if (pattern.startsWith("!")) {
+      absPattern = pattern.substr(1);
+      type = "negative";
+    } else {
+      absPattern = pattern;
+      type = "positive";
+    }
+    const resolvedPattern: string = basePath !== undefined ? sysPath.resolve(basePath, absPattern) : absPattern;
+    matches.push({
+      type,
+      regexp: minimatch.makeRe(resolvedPattern, {dot: true}),
+    });
+    // Fix bad wildstar conversion to RegExp
+    if (absPattern.startsWith("**/")) {
+      const patternTail: string = absPattern.substr("**/".length);
+      const resolvedPattern: string = basePath !== undefined ? sysPath.resolve(basePath, patternTail) : patternTail;
+      matches.push({
+        type,
+        regexp: minimatch.makeRe(resolvedPattern, {dot: true}),
+      });
+    }
+  }
+
+  return function filter(info: ModuleInfo): boolean {
+    if (!isRegularFile(info)) {
+      return false;
+    }
+    const posixPath: string = toPosixPath(info.url);
+    for (const match of matches) {
+      if (match.regexp.test(posixPath)) {
+        return match.type === "positive";
+      }
+    }
+    return false;
+  };
+}
+
+export function isRegularFile(info: ModuleInfo): boolean {
+  return parseNodeScriptUrl(info.url).isRegularFile;
 }
 
 function inCwd(info: ModuleInfo): boolean {
