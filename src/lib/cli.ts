@@ -1,4 +1,5 @@
 import assert from "assert";
+import cp from "child_process";
 import findUp from "find-up";
 import fs from "fs";
 import Exclude from "test-exclude";
@@ -11,6 +12,7 @@ import { Reporter, StreamReporter, VinylReporter } from "./reporter";
 import { DEFAULT_REGISTRY } from "./reporter-registry";
 import { SourcedProcessCov, spawnInspected } from "./spawn-inspected";
 import { VERSION } from "./version";
+import { CloseFn as FgCloseFn, proxy as fgChildProxy } from "demurgos-foreground-child";
 
 interface Watermarks {
   lines: [number, number];
@@ -136,17 +138,29 @@ async function execRunAction({config}: RunAction, cwd: string, proc: NodeJS.Proc
   const file: string = config.command[0];
   const args: string[] = config.command.slice(1);
   const filter: CoverageFilter = fromGlob([]); // TODO: Pass include/exclude.
-  const processCovs: SourcedProcessCov[] = await spawnInspected(file, args, {filter});
+
+  const subProcessExit: DeferredPromise<number> = deferPromise();
+
+  async function onRootProcess(inspectedProc: cp.ChildProcess): Promise<void> {
+    const closeFn: FgCloseFn = await fgChildProxy(proc, inspectedProc);
+    if (closeFn.signal !== null) {
+      subProcessExit.reject(new Error(`Process killed by signal: ${closeFn.signal}`));
+    } else {
+      subProcessExit.resolve(closeFn.code!);
+    }
+  }
+
+  const processCovs: SourcedProcessCov[] = await spawnInspected(file, args, {filter, onRootProcess});
+  const exitCode: number = await subProcessExit.promise;
   const reportOptions: any = {
     waterMarks: config.waterMarks,
   };
 
   const reporter: Reporter = createReporter(DEFAULT_REGISTRY, config.reporters, reportOptions);
-  const tasks: Array<Promise<void>> = [];
+  const tasks: Promise<void>[] = [];
   if (reporter.reportStream !== undefined) {
-    const stream: NodeJS.ReadableStream = reportStream(reporter as StreamReporter, processCovs)
-      .pipe(proc.stdout);
-    tasks.push(asyncDonePromise(() => stream));
+    const stream: NodeJS.ReadableStream = reportStream(reporter as StreamReporter, processCovs);
+    tasks.push(pipeData(stream, proc.stdout));
   }
   if (reporter.reportVinyl !== undefined) {
     const stream: NodeJS.ReadableStream = reportVinyl(reporter as VinylReporter, processCovs)
@@ -156,10 +170,10 @@ async function execRunAction({config}: RunAction, cwd: string, proc: NodeJS.Proc
 
   try {
     await Promise.all(tasks);
-    return 0;
+    return exitCode;
   } catch (err) {
     proc.stderr.write(Buffer.from(err.toString() + "\n"));
-    return 1;
+    return Math.max(1, exitCode);
   }
 }
 
@@ -217,4 +231,28 @@ async function readConfigFile(cwd: string): Promise<FileConfig> {
     return Object.create(null);
   }
   return JSON.parse(fs.readFileSync(configPath, "UTF-8"));
+}
+
+interface DeferredPromise<T> {
+  promise: Promise<T>;
+  resolve(value: T): void;
+  reject(reason: any): void;
+}
+
+function deferPromise<T>(): DeferredPromise<T> {
+  let resolve: (value: T) => void;
+  let reject: (reason: any) => void;
+  const promise: Promise<T> = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return {resolve: resolve!, reject: reject!, promise};
+}
+
+function pipeData(src: NodeJS.ReadableStream, dest: NodeJS.WritableStream): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    src.on("data", chunk => dest.write(chunk));
+    src.on("error", reject);
+    src.on("end", () => resolve());
+  });
 }

@@ -1,5 +1,6 @@
 import { ProcessCov, ScriptCov } from "@c88/v8-coverage";
 import assert from "assert";
+import cp from "child_process";
 import cri from "chrome-remote-interface";
 import { ChildProcessProxy, observeSpawn, ObserveSpawnOptions, SpawnEvent } from "demurgos-spawn-wrap";
 import Protocol from "devtools-protocol";
@@ -7,11 +8,11 @@ import events from "events";
 import { SourceType } from "istanbulize";
 import { CoverageFilter } from "./filter";
 
-const DEBUGGER_URI_RE = /ws:\/\/.*?:(\d+)\//;
+const DEBUGGER_URI_RE: RegExp = /ws:\/\/.*?:(\d+)\//;
 // In milliseconds (1s)
-const GET_DEBUGGER_PORT_TIMEOUT = 1000;
+const GET_DEBUGGER_PORT_TIMEOUT: number = 1000;
 // In milliseconds (10s)
-const GET_COVERAGE_TIMEOUT = 10000;
+const GET_COVERAGE_TIMEOUT: number = 10000;
 
 export interface SourcedScriptCov extends ScriptCov {
   sourceText: string;
@@ -23,7 +24,8 @@ export interface SourcedProcessCov extends ProcessCov {
 }
 
 export interface SpawnInspectedOptions extends ObserveSpawnOptions {
-  filter?: CoverageFilter,
+  filter?: CoverageFilter;
+  onRootProcess?(process: cp.ChildProcess): any;
 }
 
 export async function spawnInspected(
@@ -37,12 +39,16 @@ export async function spawnInspected(
     observeSpawn(file, args, options)
       .subscribe(
         async (ev: SpawnEvent) => {
-          const proxy = ev.proxySpawn(["--inspect=0", ...ev.args]);
+          if (ev.rootProcess !== undefined && options.onRootProcess !== undefined) {
+            options.onRootProcess(ev.rootProcess);
+          }
+          const args: ReadonlyArray<string> = ["--inspect=0", ...ev.args];
+          const proxy: ChildProcessProxy = ev.proxySpawn(args);
           const debuggerPort: number = await getDebuggerPort(proxy);
           const processCov: SourcedProcessCov = await getCoverage(debuggerPort, options.filter);
           processCovs.push(processCov);
         },
-        (error: Error) => reject(error),
+        reject,
         () => resolve(processCovs),
       );
   });
@@ -57,7 +63,7 @@ export async function getDebuggerPort(proc: ChildProcessProxy): Promise<number> 
 
     function onStderrData(chunk: Buffer): void {
       stderrBuffer = Buffer.concat([stderrBuffer, chunk]);
-      const stderrStr = stderrBuffer.toString("UTF-8");
+      const stderrStr: string = stderrBuffer.toString("UTF-8");
       const match = DEBUGGER_URI_RE.exec(stderrStr);
       if (match === null) {
         return;
@@ -74,7 +80,7 @@ export async function getDebuggerPort(proc: ChildProcessProxy): Promise<number> 
 
     function onTimeout(): void {
       removeListeners();
-      reject(new Error(`Unable to hook inspector (timeout)`));
+      reject(new Error("Unable to hook inspector (timeout)"));
       // proc.kill();
     }
 
@@ -157,7 +163,7 @@ async function getCoverage(port: number, filter?: CoverageFilter): Promise<Sourc
 
     function onTimeout(): void {
       removeListeners();
-      reject(new Error(`Unable to get V8 coverage (timeout)`));
+      reject(new Error("Unable to get V8 coverage (timeout)"));
     }
 
     function removeListeners(): void {
