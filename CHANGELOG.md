@@ -1,6 +1,9 @@
-# Next
+# 0.2.0 (2018-11-30)
 
 - **[Feature]**: Add support for source maps.
+- **[Feature]**: Add basic support for globbing.
+- **[Fix]**: Fix promise rejection on timeout.
+- **[Fix]**: Proxy the child process.
 
 # 0.1.3 (2018-11-25)
 
