@@ -62,5 +62,7 @@
     "test/**/*.ts",
     "lib/**/*.ts"
   ],
-  "exclude": []
+  "exclude": [
+    "test/fixtures/**/*.ts"
+  ]
 }

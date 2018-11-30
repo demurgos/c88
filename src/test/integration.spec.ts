@@ -2,12 +2,12 @@ import chai from "chai";
 import childProcess from "child_process";
 import sysPath from "path";
 
-const c8Path = require.resolve("../lib/bin/c88");
+const c8Path: string = require.resolve("../lib/bin/c88");
 
 chai.should();
 
 describe("c88", () => {
-  it("reports coverage for script that exits normally", function(this: Mocha.Context) {
+  it("reports coverage for script that exits normally", function (this: Mocha.Context) {
     this.timeout(10000);
 
     const {stdout} = childProcess.spawnSync(process.execPath, [

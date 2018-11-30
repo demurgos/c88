@@ -1,7 +1,7 @@
 import { Reporter } from "./reporter";
-import { createTextReporter } from "./reporters/text";
-import { createLcovReporter } from "./reporters/lcov";
 import { createHtmlReporter } from "./reporters/html";
+import { createLcovReporter } from "./reporters/lcov";
+import { createTextReporter } from "./reporters/text";
 
 export type ReporterFactory = (options: any) => Reporter;
 
@@ -27,6 +27,6 @@ export class ReporterRegistry {
 
 export const DEFAULT_REGISTRY: ReporterRegistry = new ReporterRegistry();
 
-DEFAULT_REGISTRY.register("text", () => createTextReporter());
-DEFAULT_REGISTRY.register("lcovonly", () => createLcovReporter());
-DEFAULT_REGISTRY.register("html", () => createHtmlReporter());
+DEFAULT_REGISTRY.register("text", createTextReporter);
+DEFAULT_REGISTRY.register("lcovonly", createLcovReporter);
+DEFAULT_REGISTRY.register("html", createHtmlReporter);

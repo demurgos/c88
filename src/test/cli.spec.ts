@@ -39,7 +39,6 @@ describe("cli", () => {
             "!**/*{.,-}test.js",
             "!**/__tests__/**",
             "!**/node_modules/**",
-            "!node_modules/**",
           ],
           command: ["node", "foo.js"],
         },

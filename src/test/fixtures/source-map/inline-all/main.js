@@ -1,0 +1,7 @@
+"use strict";
+function hello(_a) {
+    var name = _a.name;
+    console.log("Hello, " + name + "!");
+}
+hello({ name: "c88" });
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoibWFpbi5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIm1haW4udHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IjtBQUlBLFNBQVMsS0FBSyxDQUFDLEVBQWdCO1FBQWYsY0FBSTtJQUNsQixPQUFPLENBQUMsR0FBRyxDQUFDLFlBQVUsSUFBSSxNQUFHLENBQUMsQ0FBQztBQUNqQyxDQUFDO0FBRUQsS0FBSyxDQUFDLEVBQUMsSUFBSSxFQUFFLEtBQUssRUFBQyxDQUFDLENBQUMiLCJzb3VyY2VzQ29udGVudCI6WyJpbnRlcmZhY2UgR3JlZXRpbmcge1xuICBuYW1lOiBzdHJpbmc7XG59XG5cbmZ1bmN0aW9uIGhlbGxvKHtuYW1lfTogR3JlZXRpbmcpOiB2b2lkIHtcbiAgY29uc29sZS5sb2coYEhlbGxvLCAke25hbWV9IWApO1xufVxuXG5oZWxsbyh7bmFtZTogXCJjODhcIn0pO1xuIl19

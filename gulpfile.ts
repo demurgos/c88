@@ -63,7 +63,7 @@ const test: buildTools.MochaTarget = {
   project,
   name: "test",
   srcDir: "src",
-  scripts: ["test/**/*.ts", "lib/**/*.ts"],
+  scripts: ["test/**/*.ts", "!test/fixtures/**/*.ts", "lib/**/*.ts"],
   outModules: buildTools.OutModules.Js,
   customTypingsDir: "src/custom-typings",
   tscOptions: <any> {
@@ -71,7 +71,7 @@ const test: buildTools.MochaTarget = {
     allowSyntheticDefaultImports: true,
     esModuleInterop: true,
   },
-  copy: [{files: ["test/fixtures/**/*.{mjs,js}"]}],
+  copy: [{files: ["test/fixtures/**/*.{js,mjs,ts}"]}],
   clean: {
     dirs: ["build/test"],
   },

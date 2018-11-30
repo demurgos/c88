@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "inlineSourceMap": true,
+    "inlineSources": false,
+    "outDir": ".",
+    "rootDir": ".",
+    "strict": true
+  },
+  "files": [
+    "main.ts"
+  ]
+}

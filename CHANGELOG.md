@@ -1,3 +1,7 @@
+# Next
+
+- **[Feature]**: Add support for source maps.
+
 # 0.1.3 (2018-11-25)
 
 - **[Fix]** Add support for exec args (such as `--experimental-modules`).

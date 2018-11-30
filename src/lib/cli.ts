@@ -3,16 +3,20 @@ import cp from "child_process";
 import { CloseFn as FgCloseFn, proxy as fgChildProxy } from "demurgos-foreground-child";
 import findUp from "find-up";
 import fs from "fs";
-import { fromSysPath } from "furi";
+import { fromSysPath, toSysPath } from "furi";
+import sysPath from "path";
 import Exclude from "test-exclude";
+import urlMod from "url";
 import vinylFs from "vinyl-fs";
 import yargs from "yargs";
 import { asyncDonePromise } from "./async-done-promise";
 import { CoverageFilter, fromGlob } from "./filter";
+import { GetText, getText as defaultGetText, GetTextSync, getTextSyncFromSourceStore } from "./get-text";
 import { createReporter, reportStream, reportVinyl } from "./report";
 import { Reporter, StreamReporter, VinylReporter } from "./reporter";
 import { DEFAULT_REGISTRY } from "./reporter-registry";
-import { SourcedProcessCov, spawnInspected } from "./spawn-inspected";
+import { RichProcessCov, spawnInspected } from "./spawn-inspected";
+import { processCovsToIstanbul } from "./to-istanbul";
 import { VERSION } from "./version";
 
 const DEFAULT_GLOBS: ReadonlyArray<string> = Exclude.defaultExclude.map((pattern: string) => `!${pattern}`);
@@ -144,7 +148,7 @@ async function execRunAction({config}: RunAction, cwd: string, proc: NodeJS.Proc
     }
   }
 
-  let processCovs: SourcedProcessCov[];
+  let processCovs: RichProcessCov[];
   try {
     processCovs = await spawnInspected(file, args, {filter, onRootProcess});
   } catch (err) {
@@ -152,29 +156,41 @@ async function execRunAction({config}: RunAction, cwd: string, proc: NodeJS.Proc
     return 1;
   }
   const exitCode: number = await subProcessExit.promise;
-  const reportOptions: any = {
-    waterMarks: config.waterMarks,
-  };
-
-  const reporter: Reporter = createReporter(DEFAULT_REGISTRY, config.reporters, reportOptions);
-  const tasks: Promise<void>[] = [];
-  if (reporter.reportStream !== undefined) {
-    const stream: NodeJS.ReadableStream = reportStream(reporter as StreamReporter, processCovs);
-    tasks.push(pipeData(stream, proc.stdout));
-  }
-  if (reporter.reportVinyl !== undefined) {
-    const stream: NodeJS.ReadableStream = reportVinyl(reporter as VinylReporter, processCovs)
-      .pipe(vinylFs.dest(config.coverageDir));
-    tasks.push(asyncDonePromise(() => stream));
-  }
 
   try {
-    await Promise.all(tasks);
+    const reporter: Reporter = createReporter(DEFAULT_REGISTRY, config.reporters, {waterMarks: config.waterMarks});
+    const resolvedCoverageDir: string = sysPath.join(cwd, config.coverageDir);
+    const coverageDir: urlMod.URL = fromSysPath(resolvedCoverageDir);
+    await report(reporter, processCovs, proc.stdout, coverageDir);
     return exitCode;
   } catch (err) {
     proc.stderr.write(Buffer.from(err.toString() + "\n"));
     return Math.max(1, exitCode);
   }
+}
+
+export async function report(
+  reporter: Reporter,
+  processCovs: ReadonlyArray<RichProcessCov>,
+  outStream: NodeJS.WritableStream,
+  outDir: Readonly<urlMod.URL>,
+  getText: GetText = defaultGetText,
+): Promise<void> {
+  const {coverageMap, sources} = await processCovsToIstanbul(processCovs, getText);
+  const getSourcesSync: GetTextSync = getTextSyncFromSourceStore(sources);
+
+  const tasks: Promise<void>[] = [];
+  if (reporter.reportStream !== undefined) {
+    const stream: NodeJS.ReadableStream = reportStream(reporter as StreamReporter, coverageMap, getSourcesSync);
+    tasks.push(pipeData(stream, outStream));
+  }
+  if (reporter.reportVinyl !== undefined) {
+    const stream: NodeJS.ReadableStream = reportVinyl(reporter as VinylReporter, coverageMap, getSourcesSync)
+      .pipe(vinylFs.dest(toSysPath(outDir.href)));
+    tasks.push(asyncDonePromise(() => stream));
+  }
+
+  await Promise.all(tasks);
 }
 
 export async function getAction(args: string[], cwd: string): Promise<CliAction> {
@@ -210,7 +226,7 @@ export function parseArgs(args: string[]): ParseArgsResult {
   });
   assert(isParsed);
   const err: Error | undefined | null = _err!;
-  const parsed = _parsed!;
+  const parsed: any = _parsed!;
   const output: string = _output!;
   if (err === null) {
     // Successfully parsed
@@ -237,7 +253,9 @@ async function readConfigFile(cwd: string): Promise<FileConfig> {
 
 interface DeferredPromise<T> {
   promise: Promise<T>;
+
   resolve(value: T): void;
+
   reject(reason: any): void;
 }
 

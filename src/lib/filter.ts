@@ -1,6 +1,6 @@
 import { fromSysPath, toPosixPath } from "furi";
 import minimatch from "minimatch";
-import { parseSys as parseNodeScriptUrl, ScriptUrl } from "node-script-url";
+import { ParsedScriptUrl, parseSys as parseNodeScriptUrl } from "node-script-url";
 import sysPath from "path";
 import url from "url";
 
@@ -74,16 +74,16 @@ export function fromGlob(options: FromGlobOptions): CoverageFilter {
 }
 
 export function isRegularFile(info: ModuleInfo): boolean {
-  return parseNodeScriptUrl(info.url).isRegularFile;
+  return parseNodeScriptUrl(info.url).isFileUrl;
 }
 
 function inCwd(info: ModuleInfo): boolean {
-  const scriptUrl: ScriptUrl = parseNodeScriptUrl(info.url);
-  if (!scriptUrl.isRegularFile) {
+  const scriptUrl: ParsedScriptUrl = parseNodeScriptUrl(info.url);
+  if (!scriptUrl.isFileUrl) {
     return false;
   }
   const cwdFuri: string = fromSysPath(sysPath.resolve(process.cwd())).href;
-  return scriptUrl.isRegularFile && isDescendantOf(scriptUrl.url, cwdFuri);
+  return isDescendantOf(scriptUrl.url, cwdFuri);
 }
 
 function isDescendantOf(curUrl: string, ancestorUrl: string): boolean {

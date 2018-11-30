@@ -1,12 +1,12 @@
 import chai from "chai";
-import { parseSys as parseNodeScriptUrl, ScriptUrl } from "node-script-url";
+import { ParsedScriptUrl, parseSys as parseNodeScriptUrl } from "node-script-url";
 import path from "path";
 import { ModuleInfo } from "../lib/filter";
-import { SourcedProcessCov, spawnInspected } from "../lib/spawn-inspected";
+import { RichProcessCov, spawnInspected } from "../lib/spawn-inspected";
 
 function inFixturesDirectory(info: ModuleInfo): boolean {
-  const scriptUrl: ScriptUrl = parseNodeScriptUrl(info.url);
-  if (!scriptUrl.isRegularFile) {
+  const scriptUrl: ParsedScriptUrl = parseNodeScriptUrl(info.url);
+  if (!scriptUrl.isFileUrl) {
     return false;
   }
   return isDescendantOf(scriptUrl.path, path.resolve(__dirname, "fixtures"));
@@ -30,7 +30,7 @@ describe("spawnInspected", () => {
     const FIXTURE: string = require.resolve("./fixtures/normal.js");
 
     it("runs it successfully and collect V8 coverage", async () => {
-      const processCovs: SourcedProcessCov[] = await spawnInspected(
+      const processCovs: RichProcessCov[] = await spawnInspected(
         process.execPath,
         [FIXTURE],
         {filter: inFixturesDirectory},
@@ -46,7 +46,7 @@ describe("spawnInspected", () => {
     const FIXTURE: string = require.resolve("./fixtures/hello-world.mjs");
 
     it("runs it successfully and collect V8 coverage", async () => {
-      const processCovs: SourcedProcessCov[] = await spawnInspected(
+      const processCovs: RichProcessCov[] = await spawnInspected(
         process.execPath,
         ["--experimental-modules", FIXTURE],
         {filter: inFixturesDirectory},

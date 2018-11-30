@@ -14,17 +14,22 @@ const GET_DEBUGGER_PORT_TIMEOUT: number = 1000;
 // In milliseconds (10s)
 const GET_COVERAGE_TIMEOUT: number = 10000;
 
-export interface SourcedScriptCov extends ScriptCov {
+export interface ScriptMeta {
   sourceText: string;
   sourceType: SourceType;
+  sourceMapUrl?: string;
 }
 
-export interface SourcedProcessCov extends ProcessCov {
-  result: SourcedScriptCov[];
+export interface RichScriptCov extends ScriptCov, ScriptMeta {
+}
+
+export interface RichProcessCov extends ProcessCov {
+  result: RichScriptCov[];
 }
 
 export interface SpawnInspectedOptions extends ObserveSpawnOptions {
   filter?: CoverageFilter;
+
   onRootProcess?(process: cp.ChildProcess): any;
 }
 
@@ -32,10 +37,10 @@ export async function spawnInspected(
   file: string,
   args: ReadonlyArray<string>,
   options: SpawnInspectedOptions,
-): Promise<SourcedProcessCov[]> {
-  const processCovs: SourcedProcessCov[] = [];
+): Promise<RichProcessCov[]> {
+  const processCovs: RichProcessCov[] = [];
 
-  return new Promise<SourcedProcessCov[]>((resolve, reject) => {
+  return new Promise<RichProcessCov[]>((resolve, reject) => {
     observeSpawn(file, args, options)
       .subscribe(
         async (ev: SpawnEvent) => {
@@ -46,7 +51,7 @@ export async function spawnInspected(
             const args: ReadonlyArray<string> = ["--inspect=0", ...ev.args];
             const proxy: ChildProcessProxy = ev.proxySpawn(args);
             const debuggerPort: number = await getDebuggerPort(proxy);
-            const processCov: SourcedProcessCov = await getCoverage(debuggerPort, options.filter);
+            const processCov: RichProcessCov = await getCoverage(debuggerPort, options.filter);
             processCovs.push(processCov);
           } catch (err) {
             reject(err);
@@ -68,7 +73,7 @@ export async function getDebuggerPort(proc: ChildProcessProxy): Promise<number> 
     function onStderrData(chunk: Buffer): void {
       stderrBuffer = Buffer.concat([stderrBuffer, chunk]);
       const stderrStr: string = stderrBuffer.toString("UTF-8");
-      const match = DEBUGGER_URI_RE.exec(stderrStr);
+      const match: RegExpExecArray | null = DEBUGGER_URI_RE.exec(stderrStr);
       if (match === null) {
         return;
       }
@@ -96,12 +101,12 @@ export async function getDebuggerPort(proc: ChildProcessProxy): Promise<number> 
   });
 }
 
-async function getCoverage(port: number, filter?: CoverageFilter): Promise<SourcedProcessCov> {
-  return new Promise<SourcedProcessCov>(async (resolve, reject) => {
+async function getCoverage(port: number, filter?: CoverageFilter): Promise<RichProcessCov> {
+  return new Promise<RichProcessCov>(async (resolve, reject) => {
     const timeoutId: NodeJS.Timer = setTimeout(onTimeout, GET_COVERAGE_TIMEOUT);
     let client: any;
     let mainExecutionContextId: Protocol.Runtime.ExecutionContextId | undefined;
-    const scriptsToCollect: Map<Protocol.Runtime.ScriptId, boolean> = new Map();
+    const scriptIdToMeta: Map<Protocol.Runtime.ScriptId, Partial<ScriptMeta>> = new Map();
     let state: string = "WaitingForMainContext"; // TODO: enum
     try {
       client = await cri({port});
@@ -129,7 +134,21 @@ async function getCoverage(port: number, filter?: CoverageFilter): Promise<Sourc
     function onScriptParsed(ev: Protocol.Debugger.ScriptParsedEvent) {
       const collect: boolean = filter !== undefined ? filter(ev) : true;
       if (collect) {
-        scriptsToCollect.set(ev.scriptId, ev.isModule !== undefined ? ev.isModule : false);
+        let sourceType: SourceType = SourceType.Script;
+        if (ev.isModule !== undefined) {
+          sourceType = ev.isModule ? SourceType.Module : SourceType.Script;
+        }
+        let sourceMapUrl: string | undefined;
+        if (ev.sourceMapURL !== undefined && ev.sourceMapURL !== "") {
+          sourceMapUrl = ev.sourceMapURL;
+        }
+        scriptIdToMeta.set(
+          ev.scriptId,
+          {
+            sourceType,
+            sourceMapUrl,
+          },
+        );
       }
     }
 
@@ -144,18 +163,19 @@ async function getCoverage(port: number, filter?: CoverageFilter): Promise<Sourc
         // await client.Profiler.stopPreciseCoverage();
         await client.HeapProfiler.collectGarbage();
         const {result: scriptCovs} = await client.Profiler.takePreciseCoverage();
-        const result: SourcedScriptCov[] = [];
+        const result: RichScriptCov[] = [];
         for (const scriptCov of scriptCovs) {
-          const isModule: boolean | undefined = scriptsToCollect.get(scriptCov.scriptId);
-          if (isModule === undefined) {
+          const meta: Partial<ScriptMeta> | undefined = scriptIdToMeta.get(scriptCov.scriptId);
+          if (meta === undefined) {
+            // `undefined` means that the script was filtered out.
             continue;
           }
           const {scriptSource} = await client.Debugger.getScriptSource({scriptId: scriptCov.scriptId});
           result.push({
             ...scriptCov,
             sourceText: scriptSource,
-            sourceType: isModule ? SourceType.Module : SourceType.Script,
-          });
+            ...meta,
+          } as RichScriptCov);
         }
         resolve({result});
       } catch (err) {
