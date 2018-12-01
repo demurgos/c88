@@ -234,7 +234,7 @@ export function parseArgs(args: string[]): ParseArgsResult {
       action: "run",
       config: {
         command: parsed._,
-        reporters: [parsed.reporter],
+        reporters: Array.isArray(parsed.reporter) ? parsed.reporter : [parsed.reporter],
         globs: parsed.match,
       },
     };

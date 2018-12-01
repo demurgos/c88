@@ -46,6 +46,28 @@ describe("cli", () => {
       chai.assert.deepEqual(actual, expected);
     });
 
+    it("[\"node\", \"--reporter\", \"text\", \"--reporter\", \"html\", \"foo.js\"]", () => {
+      // tslint:disable-next-line:max-line-length
+      const actual: ParseArgsResult = parseArgs(["node", "--reporter", "text", "--reporter", "html", "foo.js"]) as ParseArgsResult;
+      const expected: ParseArgsResult = {
+        action: "run",
+        config: {
+          reporters: ["text", "html"],
+          globs: [
+            "!coverage/**",
+            "!packages/*/test/**",
+            "!test/**",
+            "!test{,-*}.js",
+            "!**/*{.,-}test.js",
+            "!**/__tests__/**",
+            "!**/node_modules/**",
+          ],
+          command: ["node", "foo.js"],
+        },
+      };
+      chai.assert.deepEqual(actual, expected);
+    });
+
     it("[\"--\", \"node\", \"--experimental-modules\", \"foo.mjs\"]", () => {
       const actual: ParseArgsResult = parseArgs(["--", "node", "--experimental-modules", "foo.mjs"]);
       const expected: ParseArgsResult = {
