@@ -1,3 +1,7 @@
+# Next
+
+- **[Fix]** Fix proxy support `stdin`.
+
 # 0.2.0 (2018-11-30)
 
 - **[Feature]**: Add support for source maps.
