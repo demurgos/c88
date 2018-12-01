@@ -1,4 +1,4 @@
-# Next
+# 0.2.3 (2018-12-01)
 
 - **[Fix]** Fix support for `match` option (do not force `**/*`).
 
