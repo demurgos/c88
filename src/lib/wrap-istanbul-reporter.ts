@@ -1,6 +1,7 @@
 import from2 from "from2";
 import fs from "fs";
 import libReport from "istanbul-lib-report";
+import merge2 from "merge2";
 import sysPath from "path";
 import stream from "stream";
 import Vinyl from "vinyl";
@@ -183,4 +184,40 @@ class StreamContentWriter implements libReport.ContentWriter {
   public close(): void {
     this.stream.end();
   }
+}
+
+export function toVinylOnlyReporter(reporter: StreamReporter, fileName: string): VinylReporter {
+  function reportVinyl(options: Readonly<ReportOptions>): NodeJS.ReadableStream {
+    let done: boolean = false;
+    const wrappedStream: NodeJS.ReadableStream = from2(
+      {objectMode: true},
+      (_: number, next: (err: null | Error, obj: Vinyl) => void): void => {
+        if (done) {
+          next(null, null as any); // end of stream
+          return;
+        }
+        const stream: NodeJS.ReadableStream = reporter.reportStream(options);
+        next(null, streamToVinyl(stream, fileName));
+        done = true;
+      },
+    );
+    const streams: NodeJS.ReadableStream[] = [wrappedStream];
+    if (reporter.reportVinyl !== undefined) {
+      streams.push(reporter.reportVinyl(options));
+    }
+    return merge2(streams);
+  }
+
+  return {reportVinyl};
+}
+
+function streamToVinyl(stream: NodeJS.ReadableStream, fileName: string): Vinyl {
+  const cwd: string = process.cwd();
+  const resolvedPath: string = sysPath.join(cwd, fileName);
+  return new Vinyl({
+    cwd,
+    base: cwd,
+    path: resolvedPath,
+    contents: stream,
+  });
 }

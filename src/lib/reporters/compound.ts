@@ -1,7 +1,5 @@
-import istanbulReports from "istanbul-reports";
 import merge2 from "merge2";
 import { Reporter, ReportOptions, StreamReporter, VinylReporter } from "../reporter";
-import { wrapStreamReporter } from "../wrap-istanbul-reporter";
 
 export class CompoundReporter implements Reporter {
   private readonly streamReporters: ReadonlyArray<StreamReporter>;

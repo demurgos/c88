@@ -1,3 +1,7 @@
+# Next
+
+- **[Feature]** Add `lcov`, `lcov-file` and `text-file` reporters.
+
 # 0.2.1 (2018-12-01)
 
 - **[Fix]** Fix proxy support `stdin`.

@@ -1,7 +1,7 @@
 import { Reporter } from "./reporter";
 import { createHtmlReporter } from "./reporters/html";
-import { createLcovReporter } from "./reporters/lcov";
-import { createTextReporter } from "./reporters/text";
+import { createLcovFileReporter, createLcovReporter } from "./reporters/lcov";
+import { createTextFileReporter, createTextReporter } from "./reporters/text";
 
 export type ReporterFactory = (options: any) => Reporter;
 
@@ -28,5 +28,9 @@ export class ReporterRegistry {
 export const DEFAULT_REGISTRY: ReporterRegistry = new ReporterRegistry();
 
 DEFAULT_REGISTRY.register("text", createTextReporter);
-DEFAULT_REGISTRY.register("lcovonly", createLcovReporter);
+DEFAULT_REGISTRY.register("text-file", createTextFileReporter);
+DEFAULT_REGISTRY.register("lcov", createLcovReporter);
+// TODO: Deprecate `lcovonly`
+DEFAULT_REGISTRY.register("lcovonly", createLcovFileReporter);
+DEFAULT_REGISTRY.register("lcov-file", createLcovFileReporter);
 DEFAULT_REGISTRY.register("html", createHtmlReporter);
