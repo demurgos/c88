@@ -32,7 +32,7 @@ export function fromGlob(options: FromGlobOptions): CoverageFilter {
   }
 
   const matches: FuriMatch[] = [];
-  const patterns: ReadonlyArray<string> = [...options.patterns, "**/*"];
+  const patterns: ReadonlyArray<string> = [...options.patterns];
   for (const pattern of patterns) {
     let absPattern: string;
     let type: "negative" | "positive";

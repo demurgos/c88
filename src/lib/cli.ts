@@ -19,7 +19,10 @@ import { RichProcessCov, spawnInspected } from "./spawn-inspected";
 import { processCovsToIstanbul } from "./to-istanbul";
 import { VERSION } from "./version";
 
-const DEFAULT_GLOBS: ReadonlyArray<string> = Exclude.defaultExclude.map((pattern: string) => `!${pattern}`);
+const DEFAULT_GLOBS: ReadonlyArray<string> = [
+  ...(<string[]> Exclude.defaultExclude.map((pattern: string) => `!${pattern}`)),
+  "**/*",
+];
 
 interface Watermarks {
   lines: [number, number];
