@@ -1,4 +1,4 @@
-# Next
+# 0.2.2 (2018-12-01)
 
 - **[Feature]** Add `lcov`, `lcov-file` and `text-file` reporters.
 
