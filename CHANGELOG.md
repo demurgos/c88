@@ -1,4 +1,4 @@
-# Next
+# 0.2.1 (2018-12-01)
 
 - **[Fix]** Fix proxy support `stdin`.
 - **[Fix]** Fix CLI parser to support multiple reporters.
