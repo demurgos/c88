@@ -1,4 +1,4 @@
-# Next
+# 0.2.4 (2018-12-02)
 
 - **[Fix]** Replace forced 10s timeout by an optional `timeout` parameter.
 
