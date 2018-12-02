@@ -1,4 +1,4 @@
-# Next
+# 0.2.5 (2018-12-02)
 
 - **[Fix]** Fix `lcov-file` reporter.
 
