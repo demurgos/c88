@@ -9,10 +9,8 @@ import { SourceType } from "istanbulize";
 import { CoverageFilter } from "./filter";
 
 const DEBUGGER_URI_RE: RegExp = /ws:\/\/.*?:(\d+)\//;
-// In milliseconds (1s)
-const GET_DEBUGGER_PORT_TIMEOUT: number = 1000;
 // In milliseconds (10s)
-const GET_COVERAGE_TIMEOUT: number = 10000;
+const GET_DEBUGGER_PORT_TIMEOUT: number = 10000;
 
 export interface ScriptMeta {
   sourceText: string;
@@ -29,6 +27,8 @@ export interface RichProcessCov extends ProcessCov {
 
 export interface SpawnInspectedOptions extends ObserveSpawnOptions {
   filter?: CoverageFilter;
+
+  timeout?: number;
 
   onRootProcess?(process: cp.ChildProcess): any;
 }
@@ -51,7 +51,7 @@ export async function spawnInspected(
             const args: ReadonlyArray<string> = ["--inspect=0", ...ev.args];
             const proxy: ChildProcessProxy = ev.proxySpawn(args);
             const debuggerPort: number = await getDebuggerPort(proxy);
-            const processCov: RichProcessCov = await getCoverage(debuggerPort, options.filter);
+            const processCov: RichProcessCov = await getCoverage(debuggerPort, options.filter, options.timeout);
             processCovs.push(processCov);
           } catch (err) {
             reject(err);
@@ -101,9 +101,9 @@ export async function getDebuggerPort(proc: ChildProcessProxy): Promise<number> 
   });
 }
 
-async function getCoverage(port: number, filter?: CoverageFilter): Promise<RichProcessCov> {
+async function getCoverage(port: number, filter?: CoverageFilter, timeout?: number): Promise<RichProcessCov> {
   return new Promise<RichProcessCov>(async (resolve, reject) => {
-    const timeoutId: NodeJS.Timer = setTimeout(onTimeout, GET_COVERAGE_TIMEOUT);
+    const timeoutId: NodeJS.Timer | undefined = timeout !== undefined ? setTimeout(onTimeout, timeout) : undefined;
     let client: any;
     let mainExecutionContextId: Protocol.Runtime.ExecutionContextId | undefined;
     const scriptIdToMeta: Map<Protocol.Runtime.ScriptId, Partial<ScriptMeta>> = new Map();
@@ -194,7 +194,9 @@ async function getCoverage(port: number, filter?: CoverageFilter): Promise<RichP
       (client as any as events.EventEmitter).removeListener("Runtime.executionContextCreated", onMainContextCreation);
       (client as any as events.EventEmitter).removeListener("Runtime.executionContextDestroyed", onContextDestruction);
       (client as any as events.EventEmitter).removeListener("Runtime.scriptParsed", onScriptParsed);
-      clearTimeout(timeoutId);
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
       (client as any).close();
     }
   });

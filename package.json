@@ -5,7 +5,7 @@
   "bin": "./bin/c88.js",
   "scripts": {
     "prepare": "gulp all:tsconfig.json && gulp :tslint.json && gulp lib:dist",
-    "pretest": "gulp :lint && gulp lib:build",
+    "pretest": "gulp lib:build",
     "test": "gulp test",
     "prepublishOnly": "npm test",
     "lint": "gulp :lint:fix"
