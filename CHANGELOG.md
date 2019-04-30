@@ -1,4 +1,4 @@
-# Next
+# 0.3.0 (2018-30-04)
 
 - **[Breaking change]** Update to Node 12.
 
