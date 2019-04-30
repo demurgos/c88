@@ -1,5 +1,5 @@
 import libCoverage from "istanbul-lib-coverage";
-import { istanbulize, SourceType, unwrapScriptCov, unwrapSourceText } from "istanbulize";
+import { istanbulize } from "istanbulize";
 import { parseSys as parseNodeScriptUrl } from "node-script-url";
 import sourceMap from "source-map";
 import urlMod from "url";
@@ -9,7 +9,7 @@ import { mergeRichProcessCovs } from "./merge";
 import { addFromGeneratedFileCov } from "./source-map";
 import { CoverageMapBuilder } from "./source-map/builder";
 import { MemorySourceStore, NullableSourceText } from "./source-map/source-store";
-import { RichProcessCov, RichScriptCov } from "./spawn-inspected";
+import { RichProcessCov } from "./spawn-inspected";
 
 export interface RichIstanbulCoverageMap {
   coverageMap: libCoverage.CoverageMap;
@@ -19,11 +19,9 @@ export interface RichIstanbulCoverageMap {
 export async function processCovsToIstanbul(
   processCovs: ReadonlyArray<RichProcessCov>,
   getText: GetText = defaultGetText,
-  unwrapCjs: boolean = true,
 ): Promise<RichIstanbulCoverageMap> {
   const merged: RichProcessCov = mergeRichProcessCovs(processCovs);
-  const processCov: RichProcessCov = unwrapCjs ? normalizeProcessCov(merged) : merged;
-  return toIstanbul(processCov, getText);
+  return toIstanbul(merged, getText);
 }
 
 /**
@@ -71,20 +69,6 @@ async function toIstanbul(
   };
 }
 
-export function normalizeProcessCov(processCov: RichProcessCov): RichProcessCov {
-  return {...processCov, result: processCov.result.map(normalizeScriptCov)};
-}
-
-export function normalizeScriptCov(scriptCov: RichScriptCov): RichScriptCov {
-  const sourceType: SourceType = scriptCov.sourceType;
-  if (sourceType !== SourceType.Script) {
-    return scriptCov;
-  }
-  const sourceText: string = unwrapSourceText(scriptCov.sourceText);
-  const {functions} = unwrapScriptCov(scriptCov);
-  return {...scriptCov, functions, sourceText};
-}
-
 /**
  * Convert to an istanbul coverage map, without applying source maps.
  *
@@ -94,12 +78,19 @@ export function toRawIstanbul(processCov: RichProcessCov): libCoverage.CoverageM
   const coverageMap: libCoverage.CoverageMapData = Object.create(null);
 
   for (const scriptCov of processCov.result) {
-    const generatedFileCov: libCoverage.FileCoverageData = istanbulize({
-      sourceType: scriptCov.sourceType,
-      sourceText: scriptCov.sourceText,
-      scriptCov,
-    });
-    coverageMap[scriptCov.url] = libCoverage.createFileCoverage(generatedFileCov);
+    try {
+      const generatedFileCov: libCoverage.FileCoverageData = istanbulize({
+        sourceType: scriptCov.sourceType,
+        sourceText: scriptCov.sourceText,
+        scriptCov,
+      });
+      coverageMap[scriptCov.url] = libCoverage.createFileCoverage(generatedFileCov);
+    } catch (err) {
+      const cause: Error = err;
+      const message: string = `IstanbulizeFailure for the script ${JSON.stringify(scriptCov.url)}\n${err.message}`;
+      const newErr: Error = Object.assign(new Error(message), {cause, scriptCov});
+      throw newErr;
+    }
   }
 
   return coverageMap;
