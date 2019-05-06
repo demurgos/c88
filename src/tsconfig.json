@@ -7,7 +7,7 @@
     "alwaysStrict": true,
     "charset": "utf8",
     "checkJs": false,
-    "declaration": true,
+    "declaration": false,
     "disableSizeLimit": false,
     "downlevelIteration": false,
     "emitBOM": false,
@@ -41,10 +41,8 @@
     "noImplicitUseStrict": false,
     "noLib": false,
     "noResolve": false,
-    "outDir": "../build/test",
     "preserveConstEnums": true,
     "removeComments": false,
-    "rootDir": "",
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
@@ -53,6 +51,8 @@
     "suppressImplicitAnyIndexErrors": false,
     "target": "es2017",
     "traceResolution": false,
+    "rootDir": "",
+    "outDir": "../build/test",
     "typeRoots": [
       "../node_modules/@types",
       "custom-typings"
@@ -62,7 +62,5 @@
     "test/**/*.ts",
     "lib/**/*.ts"
   ],
-  "exclude": [
-    "test/fixtures/**/*.ts"
-  ]
+  "exclude": []
 }

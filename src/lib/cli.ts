@@ -246,7 +246,7 @@ export function parseArgs(args: string[]): ParseArgsResult {
   }
 }
 
-async function readConfigFile(cwd: string): Promise<FileConfig> {
+async function readConfigFile(_cwd: string): Promise<FileConfig> {
   const configPath: string | null = findUp.sync([".c88rc", ".c88rc.json"]);
   if (configPath === null) {
     return Object.create(null);

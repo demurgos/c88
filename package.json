@@ -6,24 +6,10 @@
   "scripts": {
     "prepare": "gulp all:tsconfig.json && gulp :tslint.json && gulp lib:dist",
     "pretest": "gulp lib:build",
-    "test": "gulp test",
+    "test": "gulp test:build && mocha build/test/test.cjs.js",
     "prepublishOnly": "npm test",
-    "lint": "gulp :lint:fix"
-  },
-  "nyc": {
-    "include": [
-      "build/lib/**/*.js"
-    ],
-    "exclude": [
-      "build/test/**/*.js"
-    ],
-    "reporter": [
-      "text",
-      "html"
-    ],
-    "extension": [
-      ".mjs"
-    ]
+    "lint": "gulp :lint",
+    "format": "gulp :lint:fix"
   },
   "keywords": [
     "coverage",
@@ -34,7 +20,7 @@
     "inspector"
   ],
   "engines": {
-    "node": ">=12.1.0"
+    "node": ">=12"
   },
   "author": "Charles Samborski <demurgos@demurgos.net> (https://demurgos.net)",
   "license": "MIT",
@@ -60,7 +46,6 @@
     "chrome-remote-interface": "^0.27.1",
     "data-urls": "^1.1.0",
     "demurgos-foreground-child": "^1.6.0-beta.1",
-    "demurgos-spawn-wrap": "^2.0.0-beta.6",
     "devtools-protocol": "0.0.655292",
     "find-up": "^3.0.0",
     "from2": "^2.3.0",
@@ -73,6 +58,7 @@
     "merge2": "^1.2.3",
     "minimatch": "^3.0.4",
     "mkdirp": "^0.5.1",
+    "node-inspector-server": "^0.0.1",
     "node-script-url": "^0.2.0",
     "rimraf": "^2.6.3",
     "signal-exit": "^3.0.2",
@@ -86,6 +72,7 @@
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
+    "@types/gulp": "^4.0.6",
     "@types/minimist": "^1.2.0",
     "@types/mocha": "^5.2.6",
     "@types/node": "^11.13.8",
@@ -101,7 +88,7 @@
     "standard-version": "^5.0.2",
     "ts-node": "^8.1.0",
     "tslint": "^5.16.0",
-    "turbo-gulp": "^0.17.1",
+    "turbo-gulp": "^0.19.0",
     "typescript": "^3.4.5"
   }
 }

@@ -2,15 +2,11 @@ import { ProcessCov, ScriptCov } from "@c88/v8-coverage";
 import assert from "assert";
 import cp from "child_process";
 import cri from "chrome-remote-interface";
-import { ChildProcessProxy, observeSpawn, ObserveSpawnOptions, SpawnEvent } from "demurgos-spawn-wrap";
 import Protocol from "devtools-protocol";
 import events from "events";
 import { SourceType } from "istanbulize";
+import { InspectorClient, InspectorServer } from "node-inspector-server";
 import { CoverageFilter } from "./filter";
-
-const DEBUGGER_URI_RE: RegExp = /ws:\/\/.*?:(\d+)\//;
-// In milliseconds (10s)
-const GET_DEBUGGER_PORT_TIMEOUT: number = 10000;
 
 export interface ScriptMeta {
   sourceText: string;
@@ -25,7 +21,7 @@ export interface RichProcessCov extends ProcessCov {
   result: RichScriptCov[];
 }
 
-export interface SpawnInspectedOptions extends ObserveSpawnOptions {
+export interface SpawnInspectedOptions extends cp.SpawnOptions {
   filter?: CoverageFilter;
 
   timeout?: number;
@@ -40,18 +36,20 @@ export async function spawnInspected(
 ): Promise<RichProcessCov[]> {
   const processCovs: RichProcessCov[] = [];
 
+  const srv: InspectorServer = await InspectorServer.open();
+
   return new Promise<RichProcessCov[]>((resolve, reject) => {
-    observeSpawn(file, args, options)
+    srv
       .subscribe(
-        async (ev: SpawnEvent) => {
+        async (ev: InspectorClient) => {
           try {
-            if (ev.rootProcess !== undefined && options.onRootProcess !== undefined) {
-              options.onRootProcess(ev.rootProcess);
-            }
-            const args: ReadonlyArray<string> = ["--inspect=0", ...ev.args];
-            const proxy: ChildProcessProxy = ev.proxySpawn(args);
-            const debuggerPort: number = await getDebuggerPort(proxy);
-            const processCov: RichProcessCov = await getCoverage(debuggerPort, options.filter, options.timeout);
+            // if (ev.rootProcess !== undefined && options.onRootProcess !== undefined) {
+            //   options.onRootProcess(ev.rootProcess);
+            // }
+            // const args: ReadonlyArray<string> = ["--inspect=0", ...ev.args];
+            // const proxy: ChildProcessProxy = ev.proxySpawn(args);
+            // const debuggerPort: number = await getDebuggerPort(proxy);
+            const processCov: RichProcessCov = await getCoverage(ev.url, options.filter, options.timeout);
             processCovs.push(processCov);
           } catch (err) {
             reject(err);
@@ -60,66 +58,36 @@ export async function spawnInspected(
         reject,
         () => resolve(processCovs),
       );
+
+    const child: cp.ChildProcess = srv.spawn(file, args, options);
+    if (options.onRootProcess !== undefined) {
+      options.onRootProcess(child);
+    }
+
+    child.on("close", () => {
+      srv.closeSync();
+    });
   });
 }
 
-export async function getDebuggerPort(proc: ChildProcessProxy): Promise<number> {
-  return new Promise<number>((resolve, reject) => {
-    const timeoutId: NodeJS.Timer = setTimeout(onTimeout, GET_DEBUGGER_PORT_TIMEOUT * 100);
-    let stderrBuffer: Buffer = Buffer.alloc(0);
-    proc.stderr.on("data", onStderrData);
-    proc.stderr.on("close", onClose);
-
-    function onStderrData(chunk: Buffer): void {
-      stderrBuffer = Buffer.concat([stderrBuffer, chunk]);
-      const stderrStr: string = stderrBuffer.toString("UTF-8");
-      const match: RegExpExecArray | null = DEBUGGER_URI_RE.exec(stderrStr);
-      if (match === null) {
-        return;
-      }
-      const result: number = parseInt(match[1], 10);
-      removeListeners();
-      resolve(result);
-    }
-
-    function onClose(code: number | null, signal: string | null): void {
-      removeListeners();
-      reject(new Error(`Unable to hook inspector (early exit, ${code}, ${signal})`));
-    }
-
-    function onTimeout(): void {
-      removeListeners();
-      reject(new Error("Unable to hook inspector (timeout)"));
-      // proc.kill();
-    }
-
-    function removeListeners(): void {
-      proc.stderr.removeListener("data", onStderrData);
-      proc.stderr.removeListener("close", onClose);
-      clearTimeout(timeoutId);
-    }
-  });
-}
-
-async function getCoverage(port: number, filter?: CoverageFilter, timeout?: number): Promise<RichProcessCov> {
+async function getCoverage(url: string, filter?: CoverageFilter, timeout?: number): Promise<RichProcessCov> {
   return new Promise<RichProcessCov>(async (resolve, reject) => {
     const timeoutId: NodeJS.Timer | undefined = timeout !== undefined ? setTimeout(onTimeout, timeout) : undefined;
-    let client: any;
+    let session: any;
     let mainExecutionContextId: Protocol.Runtime.ExecutionContextId | undefined;
     const scriptIdToMeta: Map<Protocol.Runtime.ScriptId, Partial<ScriptMeta>> = new Map();
     let state: string = "WaitingForMainContext"; // TODO: enum
     try {
-      client = await cri({port});
+      session = await cri({target: url});
+      (session as any as events.EventEmitter).once("Runtime.executionContextCreated", onMainContextCreation);
+      (session as any as events.EventEmitter).on("Runtime.executionContextDestroyed", onContextDestruction);
+      (session as any as events.EventEmitter).on("Debugger.scriptParsed", onScriptParsed);
 
-      await client.Profiler.enable();
-      await client.Profiler.startPreciseCoverage({callCount: true, detailed: true});
-      await client.Debugger.enable();
-
-      (client as any as events.EventEmitter).once("Runtime.executionContextCreated", onMainContextCreation);
-      (client as any as events.EventEmitter).on("Runtime.executionContextDestroyed", onContextDestruction);
-      (client as any as events.EventEmitter).on("Debugger.scriptParsed", onScriptParsed);
-
-      await client.Runtime.enable();
+      await session.Profiler.enable();
+      await session.Profiler.startPreciseCoverage({callCount: true, detailed: true});
+      await session.Debugger.enable();
+      await session.Runtime.enable();
+      await session.Runtime.runIfWaitingForDebugger();
     } catch (err) {
       removeListeners();
       reject(err);
@@ -160,9 +128,9 @@ async function getCoverage(port: number, filter?: CoverageFilter, timeout?: numb
       state = "WaitingForCoverage";
 
       try {
-        // await client.Profiler.stopPreciseCoverage();
-        await client.HeapProfiler.collectGarbage();
-        const {result: scriptCovs} = await client.Profiler.takePreciseCoverage();
+        // await session.Profiler.stopPreciseCoverage();
+        await session.HeapProfiler.collectGarbage();
+        const {result: scriptCovs} = await session.Profiler.takePreciseCoverage();
         const result: RichScriptCov[] = [];
         for (const scriptCov of scriptCovs) {
           const meta: Partial<ScriptMeta> | undefined = scriptIdToMeta.get(scriptCov.scriptId);
@@ -170,7 +138,7 @@ async function getCoverage(port: number, filter?: CoverageFilter, timeout?: numb
             // `undefined` means that the script was filtered out.
             continue;
           }
-          const {scriptSource} = await client.Debugger.getScriptSource({scriptId: scriptCov.scriptId});
+          const {scriptSource} = await session.Debugger.getScriptSource({scriptId: scriptCov.scriptId});
           result.push({
             ...scriptCov,
             sourceText: scriptSource,
@@ -191,13 +159,18 @@ async function getCoverage(port: number, filter?: CoverageFilter, timeout?: numb
     }
 
     function removeListeners(): void {
-      (client as any as events.EventEmitter).removeListener("Runtime.executionContextCreated", onMainContextCreation);
-      (client as any as events.EventEmitter).removeListener("Runtime.executionContextDestroyed", onContextDestruction);
-      (client as any as events.EventEmitter).removeListener("Runtime.scriptParsed", onScriptParsed);
+      if (session === undefined) {
+        // Failure before the session is created
+        return;
+      }
+
+      (session as any as events.EventEmitter).removeListener("Runtime.executionContextCreated", onMainContextCreation);
+      (session as any as events.EventEmitter).removeListener("Runtime.executionContextDestroyed", onContextDestruction);
+      (session as any as events.EventEmitter).removeListener("Runtime.scriptParsed", onScriptParsed);
       if (timeoutId !== undefined) {
         clearTimeout(timeoutId);
       }
-      (client as any).close();
+      (session as any).close();
     }
   });
 }

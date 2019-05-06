@@ -1,13 +1,14 @@
-import * as buildTools from "turbo-gulp";
-
 import gulp from "gulp";
-import minimist, { ParsedArgs } from "minimist";
+import minimist from "minimist";
+import * as buildTools from "turbo-gulp";
+import { LibTarget, registerLibTasks } from "turbo-gulp/targets/lib";
+import { MochaTarget, registerMochaTasks } from "turbo-gulp/targets/mocha";
 
 interface Options {
   devDist?: string;
 }
 
-const options: Options & ParsedArgs = minimist(process.argv.slice(2), {
+const options: Options & minimist.ParsedArgs = minimist(process.argv.slice(2), {
   string: ["devDist"],
   default: {devDist: undefined},
   alias: {devDist: "dev-dist"},
@@ -19,15 +20,21 @@ const project: buildTools.Project = {
   buildDir: "build",
   distDir: "dist",
   srcDir: "src",
+  typescript: {
+    tscOptions: {
+      noUnusedLocals: false,
+      noUnusedParameters: false,
+      skipLibCheck: true,
+    },
+  },
 };
 
-const lib: buildTools.LibTarget = {
+const lib: LibTarget = {
   project,
   name: "lib",
   srcDir: "src/lib",
   scripts: ["**/*.ts"],
   mainModule: "index",
-  outModules: buildTools.OutModules.Js,
   dist: {
     packageJsonMap: (old: buildTools.PackageJson): buildTools.PackageJson => {
       const version: string = options.devDist !== undefined ? `${old.version}-build.${options.devDist}` : old.version;
@@ -38,7 +45,10 @@ const lib: buildTools.LibTarget = {
     },
   },
   customTypingsDir: "src/custom-typings",
-  tscOptions: <any> {
+  tscOptions: {
+    declaration: true,
+    noUnusedLocals: false,
+    noUnusedParameters: false,
     skipLibCheck: true,
   },
   typedoc: {
@@ -49,37 +59,33 @@ const lib: buildTools.LibTarget = {
       branch: "gh-pages",
     },
   },
-  copy: [
-    {
-      files: ["**/*.json"],
-    },
-  ],
   clean: {
     dirs: ["build/lib", "dist/lib"],
   },
 };
 
-const test: buildTools.MochaTarget = {
+const test: MochaTarget = {
   project,
   name: "test",
   srcDir: "src",
-  scripts: ["test/**/*.ts", "!test/fixtures/**/*.ts", "lib/**/*.ts"],
-  outModules: buildTools.OutModules.Js,
+  scripts: ["test/**/*.ts", "lib/**/*.ts"],
   customTypingsDir: "src/custom-typings",
-  tscOptions: <any> {
+  tscOptions: {
     skipLibCheck: true,
-    allowSyntheticDefaultImports: true,
-    esModuleInterop: true,
+    noUnusedLocals: false,
+    noUnusedParameters: false,
   },
+  // generateTestMain: true,
   copy: [{files: ["test/fixtures/**/*.{js,mjs,ts}"]}],
   clean: {
     dirs: ["build/test"],
   },
 };
 
-const libTasks: any = buildTools.registerLibTasks(gulp, lib);
-buildTools.registerMochaTasks(gulp, test);
+const libTasks: any = registerLibTasks(gulp, lib);
+registerMochaTasks(gulp, test);
 buildTools.projectTasks.registerAll(gulp, project);
 
 gulp.task("all:tsconfig.json", gulp.parallel("lib:tsconfig.json", "test:tsconfig.json"));
 gulp.task("dist", libTasks.dist);
+gulp.task("default", libTasks.dist);

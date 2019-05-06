@@ -1,3 +1,7 @@
+# Next
+
+- **[Feature]** Use `node-inspector-server` instead of `demurgos-spawn-wrap` to inspect subprocesses.
+
 # 0.3.0 (2018-30-04)
 
 - **[Breaking change]** Update to Node 12.

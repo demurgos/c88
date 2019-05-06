@@ -74,7 +74,7 @@ export function getTextByFileUrlSync(url: Readonly<urlMod.URL>): string {
   return fs.readFileSync(url, {encoding: "UTF-8"});
 }
 
-export function getTextSyncFromSourceStore(sources: Iterable<[string, NullableSourceText]>): GetTextSync {
+export function getTextSyncFromSourceStore(_sources: Iterable<[string, NullableSourceText]>): GetTextSync {
   const cache: Map<string, NullableSourceText> = new Map();
   return (url: Readonly<urlMod.URL>): string => {
     const cached: NullableSourceText | undefined = cache.get(url.toString());

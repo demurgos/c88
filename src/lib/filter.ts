@@ -1,6 +1,6 @@
-import { fromSysPath, toPosixPath } from "furi";
+import { toPosixPath } from "furi";
 import minimatch from "minimatch";
-import { ParsedScriptUrl, parseSys as parseNodeScriptUrl } from "node-script-url";
+import { parseSys as parseNodeScriptUrl } from "node-script-url";
 import sysPath from "path";
 import url from "url";
 
@@ -77,22 +77,22 @@ export function isRegularFile(info: ModuleInfo): boolean {
   return parseNodeScriptUrl(info.url).isFileUrl;
 }
 
-function inCwd(info: ModuleInfo): boolean {
-  const scriptUrl: ParsedScriptUrl = parseNodeScriptUrl(info.url);
-  if (!scriptUrl.isFileUrl) {
-    return false;
-  }
-  const cwdFuri: string = fromSysPath(sysPath.resolve(process.cwd())).href;
-  return isDescendantOf(scriptUrl.url, cwdFuri);
-}
+// function inCwd(info: ModuleInfo): boolean {
+//   const scriptUrl: ParsedScriptUrl = parseNodeScriptUrl(info.url);
+//   if (!scriptUrl.isFileUrl) {
+//     return false;
+//   }
+//   const cwdFuri: string = fromSysPath(sysPath.resolve(process.cwd())).href;
+//   return isDescendantOf(scriptUrl.url, cwdFuri);
+// }
 
-function isDescendantOf(curUrl: string, ancestorUrl: string): boolean {
-  const cur: ReadonlyArray<string> = new url.URL(curUrl).pathname.split("/");
-  const ancestor: ReadonlyArray<string> = new url.URL(ancestorUrl).pathname.split("/");
-  for (const [i, segment] of ancestor.entries()) {
-    if (cur[i] !== segment) {
-      return false;
-    }
-  }
-  return true;
-}
+// function isDescendantOf(curUrl: string, ancestorUrl: string): boolean {
+//   const cur: ReadonlyArray<string> = new url.URL(curUrl).pathname.split("/");
+//   const ancestor: ReadonlyArray<string> = new url.URL(ancestorUrl).pathname.split("/");
+//   for (const [i, segment] of ancestor.entries()) {
+//     if (cur[i] !== segment) {
+//       return false;
+//     }
+//   }
+//   return true;
+// }
