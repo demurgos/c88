@@ -1,6 +1,6 @@
 {
   "name": "c88",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Code coverage from the future",
   "bin": "./bin/c88.js",
   "scripts": {
