@@ -3,6 +3,7 @@ import { istanbulize } from "istanbulize";
 import { parseSys as parseNodeScriptUrl } from "node-script-url";
 import sourceMap from "source-map";
 import urlMod from "url";
+import { Incident } from "incident";
 import { GetText, getText as defaultGetText } from "./get-text";
 import { mergeCovMaps } from "./istanbul-merge";
 import { mergeRichProcessCovs } from "./merge";
@@ -44,7 +45,26 @@ async function toIstanbul(
     const rawFileCov: libCoverage.FileCoverage = rawCoverageMap[scriptCov.url];
     let useOriginal: boolean = false;
     if (scriptCov.sourceMapUrl !== undefined && parseNodeScriptUrl(scriptCov.url).isFileUrl) {
-      const sourceMapString: string = await getText(new urlMod.URL(scriptCov.sourceMapUrl));
+      let sourceMapUrl: urlMod.URL;
+      try {
+        sourceMapUrl = new urlMod.URL(scriptCov.sourceMapUrl, scriptCov.url);
+      } catch (err) {
+        throw new Incident(
+          err,
+          "SourceMapUrlResolutionError",
+          {url: scriptCov.url, sourceMapUrl: scriptCov.sourceMapUrl},
+        );
+      }
+      let sourceMapString: string;
+      try {
+        sourceMapString = await getText(sourceMapUrl);
+      } catch (err) {
+        throw new Incident(
+          err,
+          "SourceMapReadError",
+          {scriptUrl: scriptCov.url, sourceMapUrl: sourceMapUrl.href},
+        );
+      }
       const rawSourceMap: sourceMap.RawSourceMap = JSON.parse(sourceMapString);
       useOriginal = await addFromGeneratedFileCov(
         originalBuilder,
