@@ -1,12 +1,12 @@
-# Next
+# 0.3.2 (2018-05-15)
 
 - **[Fix]** Add support for relative source map URLs.
 
-# 0.3.1 (2018-30-06)
+# 0.3.1 (2018-05-06)
 
 - **[Feature]** Use `node-inspector-server` instead of `demurgos-spawn-wrap` to inspect subprocesses.
 
-# 0.3.0 (2018-30-04)
+# 0.3.0 (2018-05-04)
 
 - **[Breaking change]** Update to Node 12.
 
