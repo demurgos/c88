@@ -1,3 +1,7 @@
+# Next
+
+- **[Fix]** Update dependencies.
+
 # 0.3.2 (2018-05-15)
 
 - **[Fix]** Add support for relative source map URLs.

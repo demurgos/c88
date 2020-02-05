@@ -247,8 +247,8 @@ export function parseArgs(args: string[]): ParseArgsResult {
 }
 
 async function readConfigFile(_cwd: string): Promise<FileConfig> {
-  const configPath: string | null = findUp.sync([".c88rc", ".c88rc.json"]);
-  if (configPath === null) {
+  const configPath: string | undefined = findUp.sync([".c88rc", ".c88rc.json"]);
+  if (configPath === undefined) {
     return Object.create(null);
   }
   return JSON.parse(fs.readFileSync(configPath, "UTF-8"));

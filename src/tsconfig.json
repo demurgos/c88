@@ -52,15 +52,11 @@
     "target": "es2017",
     "traceResolution": false,
     "rootDir": "",
-    "outDir": "../build/test",
-    "typeRoots": [
-      "../node_modules/@types",
-      "custom-typings"
-    ]
+    "outDir": "../build/test"
   },
   "include": [
-    "test/**/*.ts",
-    "lib/**/*.ts"
+    "./test/**/*.ts",
+    "./lib/**/*.ts"
   ],
   "exclude": []
 }

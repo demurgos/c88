@@ -31,10 +31,11 @@ export function wrapFileReporter(reporter: libReport.Visitor): VinylReporter {
       const writer: VinylWriter = new VinylWriter(cwd, cwd, next);
       // TODO: Fix istanbul-lib-report types
       const context: libReport.Context = createContext({
+        coverageMap: options.map,
         writer,
         sourceFinder: options.sourceFinder,
       } as any as ContextOptions);
-      const tree: libReport.Tree = libReport.summarizers.pkg(options.map);
+      const tree: libReport.Tree = context.getTree("pkg");
       tree.visit(reporter, context);
       done = true;
     });
@@ -119,10 +120,11 @@ export function wrapStreamReporter(reporter: libReport.Visitor): StreamReporter 
     const duplex: stream.Duplex = new stream.PassThrough();
     const writer: StreamWriter = new StreamWriter(duplex);
     const context: libReport.Context = createContext({
+      coverageMap: options.map,
       writer,
       sourceFinder: options.sourceFinder,
     } as any as ContextOptions);
-    const tree: libReport.Tree = libReport.summarizers.pkg(options.map);
+    const tree: libReport.Tree = context.getTree("pkg");
     tree.visit(reporter, context);
     return duplex;
   }
