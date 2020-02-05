@@ -1,3 +1,7 @@
+# Next
+
+- **[Fix]** Drop `test-exclude` dependency.
+
 # 0.3.3 (2020-02-06)
 
 - **[Fix]** Update dependencies.

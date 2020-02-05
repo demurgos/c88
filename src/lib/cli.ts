@@ -5,7 +5,6 @@ import findUp from "find-up";
 import fs from "fs";
 import { fromSysPath, toSysPath } from "furi";
 import sysPath from "path";
-import Exclude from "test-exclude";
 import urlMod from "url";
 import vinylFs from "vinyl-fs";
 import yargs from "yargs";
@@ -19,8 +18,18 @@ import { RichProcessCov, spawnInspected } from "./spawn-inspected";
 import { processCovsToIstanbul } from "./to-istanbul";
 import { VERSION } from "./version";
 
-const DEFAULT_GLOBS: ReadonlyArray<string> = [
-  ...(<string[]> Exclude.defaultExclude.map((pattern: string) => `!${pattern}`)),
+const DEFAULT_GLOBS: readonly string[] = [
+  "!coverage/**",
+  "!packages/*/test{,s}/**",
+  "!**/*.d.ts",
+  "!test{,s}/**",
+  "!test{,-*}.{js,cjs,mjs,ts}",
+  "!**/*{.,-}test.{js,cjs,mjs,ts}",
+  "!**/__tests__/**",
+  "!**/{ava,nyc}.config.{js,cjs,mjs}",
+  "!**/jest.config.{js,cjs,mjs,ts}",
+  "!**/{karma,rollup,webpack}.config.js",
+  "**/{babel.config,.eslintrc,.mocharc}.{js,cjs}",
   "**/*",
 ];
 
@@ -99,7 +108,6 @@ ARG_PARSER
     describe: "directory to output coverage JSON and reports",
   })
   .pkgConf("c88")
-  .demandCommand(1)
   .epilog("visit https://git.io/vHysA for list of available reporters");
 
 // tslint:disable:whitespace
