@@ -1,4 +1,4 @@
-# Next
+# 0.3.4 (2020-02-06)
 
 - **[Fix]** Drop `test-exclude` dependency.
 
